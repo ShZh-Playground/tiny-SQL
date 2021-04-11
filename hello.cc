@@ -8,6 +8,8 @@ int main() {
     std::getline(std::cin, input);
     if (input == "exit") {
       return 0;
+    } else {
+      std::cout << "Unrecognize command！" << std::endl;
     }
   }
 }
