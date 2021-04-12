@@ -34,14 +34,25 @@ class MetaCommand: public CmdInput {
   bool accept(const Interpreter* interpreter) const override;
 };
 
-class SqlStatement: public CmdInput {
+class SelectSql: public CmdInput {
  public:
-  SqlStatement(const std::string& input): CmdInput(input) {}
+  SelectSql(const std::string& input): CmdInput(input) {
+
+  }
 
   bool accept(const Interpreter* interpreter) const override;
 };
 
-// 单例模式
+class InsertSql: public CmdInput {
+ public:
+  InsertSql(const std::string& input): CmdInput(input) {
+
+  }
+
+  bool accept(const Interpreter* interpreter) const override;
+};
+
+// 工厂模式
 class Parser {
   friend class CompilerFactory;
 
@@ -60,9 +71,12 @@ class Interpreter {
 
   bool visitMetaCommand(const MetaCommand* metaCommand) const;
 
-  bool visitSqlStatement(const SqlStatement* sqlStatement) const;
+  bool visitSelectSql(const SelectSql* sqlStatement) const;
+
+  bool visitInsertSql(const InsertSql* sqlStatement) const;
 };
 
+// 单例模式
 class CompilerFactory {
  public:
   static Interpreter& getInterpreter();

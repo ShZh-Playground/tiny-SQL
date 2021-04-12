@@ -6,18 +6,33 @@ bool MetaCommand::accept(const Interpreter* interpreter) const {
   return interpreter->visitMetaCommand(this);
 }
 
-bool SqlStatement::accept(const Interpreter* interpreter) const {
-  return interpreter->visitSqlStatement(this);
+bool SelectSql::accept(const Interpreter* interpreter) const {
+  return interpreter->visitSelectSql(this);
+}
+
+bool InsertSql::accept(const Interpreter* Interpreter) const {
+  return Interpreter->visitInsertSql(this);
 }
 
 std::shared_ptr<CmdInput> Parser::parse(const std::string& input) {
+  // 不合法的输入
   if (input.size() == 0) {
     return nullptr;
-  } else if (input[0] == '.') {   // 以.起始的都不是sql语句，而是内置的命令
-    return std::make_shared<MetaCommand>(input);
-  } else {                        // sql语句
-    return std::make_shared<SqlStatement>(input);
   }
+  // 以.起始的都不是sql语句，而是内置的命令
+  if ('.' == input[0]) {
+    return std::make_shared<MetaCommand>(input);
+  }
+  // SQL语句
+  if ("select" == input.substr(0, 6)) {
+    return std::make_shared<SelectSql>(input);
+  } else if ("insert" == input.substr(0, 6)) {
+    return std::make_shared<InsertSql>(input);
+  } else {
+    std::cout << "Unrecognized SQL statement, " << requireCheck << std::endl;
+  }
+
+  return nullptr;
 }
 
 void Interpreter::visit(const std::shared_ptr<CmdInput> cmdInput) {
@@ -34,17 +49,14 @@ bool Interpreter::visitMetaCommand(const MetaCommand* metaCommand) const {
   return false;
 }
 
-bool Interpreter::visitSqlStatement(const SqlStatement* sqlStatement) const {
-  if ("select" == sqlStatement->getInput().substr(0, 6)) {
-    std::cout << "This is where we would do a select." << std::endl;
-    return true;
-  } else if ("insert" == sqlStatement->getInput().substr(0, 6)) {
-    std::cout << "This is where we would do an insert." << std::endl;
-    return true;
-  } else {
-    std::cout << "Unrecognized SQL statement, " << requireCheck << std::endl;
-  }
-  return false;
+bool Interpreter::visitSelectSql(const SelectSql* sqlStatement) const {
+  std::cout << "This is where we would do a select." << std::endl;
+  return true;
+}
+
+bool Interpreter::visitInsertSql(const InsertSql* sqlStatement) const {
+  std::cout << "This is where we would do an insert." << std::endl;
+  return true;
 }
 
 Interpreter& CompilerFactory::getInterpreter() {
