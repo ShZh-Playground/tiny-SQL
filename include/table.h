@@ -63,6 +63,7 @@ class Table {
       auto row = loadFromMem(addr);
       os << "( " <<row.id << ", " << row.name << ", " << row.email << " )" << std::endl;
     }
+    return os;
   }
 };
 
