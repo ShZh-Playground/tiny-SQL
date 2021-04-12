@@ -17,7 +17,7 @@ int main() {
       continue;
     }
 
-    interpreter.execute(statement.get());
+    interpreter.execute(statement);
   }
 
   return 0;

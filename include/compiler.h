@@ -53,10 +53,10 @@ class Interpreter {
   friend class CompilerFactory;
 
  private:
-  void visit(const CmdInput* cmdInput);
+  void visit(const std::shared_ptr<CmdInput> cmdInput);
 
  public:
-  void execute(const CmdInput* cmdInput) { this->visit(cmdInput); }
+  void execute(const std::shared_ptr<CmdInput> cmdInput) { this->visit(cmdInput); }
 
   bool visitMetaCommand(const MetaCommand* metaCommand) const;
 

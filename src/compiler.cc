@@ -20,7 +20,7 @@ std::shared_ptr<CmdInput> Parser::parse(const std::string& input) {
   }
 }
 
-void Interpreter::visit(const CmdInput* cmdInput) {
+void Interpreter::visit(const std::shared_ptr<CmdInput> cmdInput) {
   cmdInput->accept(this);
 }
 
