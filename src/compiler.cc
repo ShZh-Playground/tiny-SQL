@@ -1,6 +1,11 @@
+#include<cstdlib>
+
 #include"../include/compiler.h"
 
 using namespace compiler;
+
+// 全局变量
+extern memory::Table table;
 
 bool MetaCommand::accept(const Interpreter* interpreter) const {
   return interpreter->visitMetaCommand(this);
@@ -42,7 +47,7 @@ void Interpreter::visit(const std::shared_ptr<CmdInput> cmdInput) {
 bool Interpreter::visitMetaCommand(const MetaCommand* metaCommand) const {
   if (".exit" == metaCommand->getInput()) {
     std::cout << "Bye" << std::endl;
-    std::exit(0);
+    exit(0);
   } else {
     std::cout << "Unrecognized meta command, " << requireCheck << std::endl;
   }
@@ -50,12 +55,13 @@ bool Interpreter::visitMetaCommand(const MetaCommand* metaCommand) const {
 }
 
 bool Interpreter::visitSelectSql(const SelectSql* sqlStatement) const {
-  std::cout << "This is where we would do a select." << std::endl;
+  std::cout << table;
   return true;
 }
 
 bool Interpreter::visitInsertSql(const InsertSql* sqlStatement) const {
-  std::cout << "This is where we would do an insert." << std::endl;
+  table.insert(sqlStatement->getRow());
+  std::cout << "Insert OK" << std::endl;
   return true;
 }
 

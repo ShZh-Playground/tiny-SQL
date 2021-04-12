@@ -4,8 +4,10 @@
 #include<tuple>
 #include<memory>
 #include<string>
-#include<cstdlib>
+#include<cstdio>
 #include<iostream>
+
+#include"../include/table.h"
 
 namespace compiler {
 
@@ -36,18 +38,20 @@ class MetaCommand: public CmdInput {
 
 class SelectSql: public CmdInput {
  public:
-  SelectSql(const std::string& input): CmdInput(input) {
-
-  }
+  SelectSql(const std::string& input): CmdInput(input) {}
 
   bool accept(const Interpreter* interpreter) const override;
 };
 
 class InsertSql: public CmdInput {
+ private:
+  memory::Row row{};
  public:
   InsertSql(const std::string& input): CmdInput(input) {
-
+    sscanf(input.c_str(), "insert %d %s %s", &row.id, row.name, row.email);
   }
+
+  memory::Row getRow() const { return this->row; }
 
   bool accept(const Interpreter* interpreter) const override;
 };
