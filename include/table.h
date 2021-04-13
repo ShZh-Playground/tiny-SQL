@@ -1,9 +1,9 @@
 #ifndef TABLE_H__
 #define TABLE_H__
 
-#include<iostream>
-#include<cstdint>
-#include<memory>
+#include <cstdint>
+#include <iostream>
+#include <memory>
 
 namespace memory {
 
@@ -26,12 +26,13 @@ void saveToMem(const Row& row, Byte* addr);
 
 Row loadFromMem(Byte* addr);
 
-constexpr std::uint32_t kPageSize = 4096;  // 和大多数操作系统分页的大小一样，4096B
+constexpr std::uint32_t kPageSize =
+    4096;  // 和大多数操作系统分页的大小一样，4096B
 constexpr std::uint32_t kMaxPageNum = 50;
 // Table由各种页面组成
 class Table {
  private:
-  std::uint32_t index_;    // Table需要自己维护一个递增的索引
+  std::uint32_t index_;  // Table需要自己维护一个递增的索引
   Byte* pages_[kMaxPageNum];
   // 内存管理——如何把一个对象放在内存中
   // 答案是获取一个页面最多能放几个对象
@@ -40,7 +41,7 @@ class Table {
   Byte* getInsertAddr();
 
  public:
-  Table(): index_(0) {
+  Table() : index_(0) {
     for (auto& page : this->pages_) {
       page = nullptr;
     }
@@ -61,12 +62,13 @@ class Table {
       Byte* addr = table.pages_[pageIndex] + rowOffset * Row::getSize();
 
       auto row = loadFromMem(addr);
-      os << "( " <<row.id << ", " << row.name << ", " << row.email << " )" << std::endl;
+      os << "( " << row.id << ", " << row.name << ", " << row.email << " )"
+         << std::endl;
     }
     return os;
   }
 };
 
-}  // Namespace memory ends
+}  // namespace memory
 
-#endif // TABLE_H__ ends
+#endif  // TABLE_H__ ends

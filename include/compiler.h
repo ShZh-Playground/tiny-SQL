@@ -1,13 +1,13 @@
 #ifndef COMPILER_H__
 #define COMPILER_H__
 
-#include<tuple>
-#include<memory>
-#include<string>
-#include<cstdio>
-#include<iostream>
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <tuple>
 
-#include"../include/table.h"
+#include "../include/table.h"
 
 namespace compiler {
 
@@ -22,32 +22,33 @@ class CmdInput {
   const std::string input_;
 
  public:
-  CmdInput(const std::string& input): input_(input) {}
+  CmdInput(const std::string& input) : input_(input) {}
 
   const std::string& getInput() const { return this->input_; }
 
   virtual bool accept(const Interpreter* interpreter) const = 0;
 };
 
-class MetaCommand: public CmdInput {
+class MetaCommand : public CmdInput {
  public:
-  MetaCommand(const std::string& input): CmdInput(input) {}
+  MetaCommand(const std::string& input) : CmdInput(input) {}
 
   bool accept(const Interpreter* interpreter) const override;
 };
 
-class SelectSql: public CmdInput {
+class SelectSql : public CmdInput {
  public:
-  SelectSql(const std::string& input): CmdInput(input) {}
+  SelectSql(const std::string& input) : CmdInput(input) {}
 
   bool accept(const Interpreter* interpreter) const override;
 };
 
-class InsertSql: public CmdInput {
+class InsertSql : public CmdInput {
  private:
   memory::Row row{};
+
  public:
-  InsertSql(const std::string& input): CmdInput(input) {
+  InsertSql(const std::string& input) : CmdInput(input) {
     sscanf(input.c_str(), "insert %d %s %s", &row.id, row.name, row.email);
   }
 
@@ -61,17 +62,19 @@ class Parser {
   friend class CompilerFactory;
 
  public:
-   static std::shared_ptr<CmdInput> parse(const std::string& input);
+  static std::shared_ptr<CmdInput> parse(const std::string& input);
 };
 
 class Interpreter {
   friend class CompilerFactory;
 
  private:
-  void visit(const std::shared_ptr<CmdInput> cmdInput);
+  void visit(const std::shared_ptr<CmdInput>& cmdInput) const;
 
  public:
-  void execute(const std::shared_ptr<CmdInput> cmdInput) { this->visit(cmdInput); }
+  void execute(const std::shared_ptr<CmdInput> cmdInput) {
+    this->visit(cmdInput);
+  }
 
   bool visitMetaCommand(const MetaCommand* metaCommand) const;
 
@@ -90,6 +93,6 @@ class CompilerFactory {
   static std::tuple<Interpreter, Parser> getAll();
 };
 
-} // namespace compiler ends
+}  // namespace compiler
 
-#endif // COMPILER_H__ marco ends
+#endif  // COMPILER_H__ marco ends
