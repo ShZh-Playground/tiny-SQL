@@ -1,4 +1,4 @@
-name: CMake
+name: Linux-x64-GCC
 
 on:
   push:
@@ -22,8 +22,7 @@ jobs:
       with:
         access_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Update
-      run: |
-        sudo apt-get update
+      run: sudo apt-get update
       
     - name: Configure CMake
       run: |
