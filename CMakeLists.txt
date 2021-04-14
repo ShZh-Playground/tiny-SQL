@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_BUILD_TYPE Debug) # default settings
 
 # Project skeleton
-set(SOURCE_DIR  ${PROJECT_SOURCE_DIR}/src)
+set(SOURCE_DIR 	${PROJECT_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(BINARY_DIR  ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_DIR   ${PROJECT_SOURCE_DIR}/cmake)
@@ -15,7 +15,7 @@ SET(TEST_DIR    ${PROJECT_SOURCE_DIR}/test)
 # Build SQL binary by modern cmake
 add_executable(tinyDB)
 target_include_directories(
-  tinyDB PRIVATE ${INCLUDE_DIR}
+	tinyDB PRIVATE ${INCLUDE_DIR}
 )
 file(GLOB_RECURSE SRCS ${SOURCE_DIR}/*.cc)
 target_sources(tinyDB PRIVATE ${SRCS} tinyDB.cc)
@@ -27,24 +27,24 @@ endif()
 
 message("Current build type is " ${CMAKE_BUILD_TYPE})
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-  # Enable unit test
-  add_subdirectory("test")
+	# Enable unit test
+	add_subdirectory("test")
 else()
-  # Make a copy to ./bin when building
-  set_target_properties(tinyDB
-    PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${BINARY_DIR}
-  )
+	# Make a copy to ./bin when building
+	set_target_properties(tinyDB
+		PROPERTIES
+		RUNTIME_OUTPUT_DIRECTORY ${BINARY_DIR}
+	)
 endif()
 
 # Clean the temp dir
 # It will report error but still works
 add_custom_command(
-  OUTPUT rm_target
-  COMMAND ${CMAKE_COMMAND} -E 
-    remove_directory ${BINARY_DIR} ${PROJECT_SOURCE_DIR}/build
+	OUTPUT rm_target
+	COMMAND ${CMAKE_COMMAND} -E 
+		remove_directory ${BINARY_DIR} ${PROJECT_SOURCE_DIR}/build
 )
 add_custom_target(
-  rm
-  DEPENDS rm_target
+	rm
+	DEPENDS rm_target
 )
