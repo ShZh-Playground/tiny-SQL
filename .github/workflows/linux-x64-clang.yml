@@ -1,0 +1,39 @@
+name: Linux-x64-Clang
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md']
+  pull_request:
+    branches: [master]
+    paths-ignore: ['**.md']
+
+env:
+  CC: clang
+  CXX: clang++
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.7.0
+      with:
+        access_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Update
+      run: sudo apt-get update
+      
+    - name: Configure CMake
+      run: |
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  
+    - name: Build
+      run: |
+        cmake --build build --config $BUILD_TYPE -j2
+    
+    - name: Test
+      run: |
+        ./build/test/test_add
