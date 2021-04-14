@@ -28,8 +28,9 @@ jobs:
   
     - name: Build
       run: |
-        cmake --build build --config $BUILD_TYPE -j2
+        cd build
+        cmake --build . --config $BUILD_TYPE -j 2
     
     - name: Test
       run: |
-        ./build/test/Debug/test_add.exe
+        Get-ChildItem build -recurse
