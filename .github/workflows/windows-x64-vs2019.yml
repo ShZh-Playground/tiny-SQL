@@ -1,0 +1,35 @@
+name: Windows-x64-vs2019
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md']
+  pull_request:
+    branches: [master]
+    paths-ignore: ['**.md']
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.7.0
+      with:
+        access_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Configure CMake
+      run: |
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  
+    - name: Build
+      run: |
+        cmake --build build --config $BUILD_TYPE -j2
+    
+    - name: Test
+      run: |
+        ./build/test/Debug/test_add.exe
