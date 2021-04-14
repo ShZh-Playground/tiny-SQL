@@ -43,5 +43,6 @@ _deps
 # vscode
 .vscode
 
-# User defined
+# Custom settings
 3rd
+bin
