@@ -1,5 +1,17 @@
 <h1 align="center">Tiny SQL</h1>
 
+<p align="center">
+    <a href="https://github.com/ShZh-Playground/tiny-SQL/issues" style="text-decoration:none" >
+        <img src="https://img.shields.io/github/issues/ShZh-Playground/tiny-SQL?color=orange" alt="issues"/>
+    </a>
+    <a href="https://github.com/ShZh-Playground/tiny-SQL" style="text-decoration:none" >
+        <img src="https://img.shields.io/github/repo-size/ShZh-Playground/tiny-SQL" alt="Size"/>
+    </a>
+  <a href="https://github.com/ShZh-Playground/tiny-SQL/blob/master/LICENSE" style="text-decoration:none">
+        <img src="https://img.shields.io/github/license/ShZh-Playground/tiny-SQL" alt="license"/>
+    </a>
+</p>
+
 <p align='center'>Shabby implementation of relational database.</p>
 
 # Prerequisite
@@ -11,9 +23,9 @@
 
 # Support
 
-| <img src="asset/windows_icon.png" width="24px" height="24px" alt="Windows"/></br>Windows | <img src="asset/linux_icon.png" width="24px" height="24px" alt="Windows"/></br>Linux | <img src="asset/macos_icon.png" width="24px" height="24px" alt="Windows"/></br>MacOS |
-| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ✔                                                            | ✔                                                            | ✔                                                            |
+| <img src="asset/windows_icon.png" width="48px" height="48px" alt="Windows"/></br>Windows | <img src="asset/linux_icon.png" width="48px" height="48px" alt="Linux"/></br>Linux | <img src="asset/macos_icon.png" width="48px" height="48px" alt="MacOS"/></br>MacOS | <img src="asset/iOS_icon.png" width="48px" height="48px" alt="iOS"/></br>iOS | <img src="asset/android_icon.png" width="48px" height="48px" alt="Android"/></br>Android |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|                              ✔                               |                              ✔                               |                              ✔                               |                              ❌                               |                              ❌                               |
 
 
 
