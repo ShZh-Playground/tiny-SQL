@@ -1,19 +1,30 @@
-# Introduce google test
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}")
-include(gtest)
-
-# 以后测试文件多起来的时候可以直接遍历得到
-add_executable(test_add
-  ${CMAKE_CURRENT_SOURCE_DIR}/test_add.cc
-)
-add_dependencies(test_add
-  gtest
-)
-target_link_libraries(test_add
-  gtest
-)
-
 # Unit test
 enable_testing()
-# Name是测试用例的名字，test_add才是可执行文件
-add_test(NAME add COMMAND test_add)
+
+# Introduce google test
+set(CMAKE_MODULE_PATH "${CMAKE_DIR};${CMAKE_MODULE_PATH}")
+include(gtest)
+include(GoogleTest)   # Introduce custom command
+if (WIN32 AND (NOT CYGWIN) AND (NOT MINGW))
+  set(gtest_disable_pthreads ON)
+endif()
+
+# Automatically add file to unit test set
+macro(tinyDB_add_test name)
+  add_executable(test_${name}
+    ${TEST_DIR}/test_${name}.cc
+  )
+  add_dependencies(test_${name} gtest)
+  target_link_libraries(test_${name} gtest)
+  gtest_discover_tests(test_${name})
+  # No need to use ctest
+endmacro()
+
+# List of unit test files
+set(UNITTEST_SOURCES
+  add
+)
+
+foreach(test_file ${UNITTEST_SOURCES})
+  tinyDB_add_test(${test_file})
+endforeach()
