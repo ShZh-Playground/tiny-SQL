@@ -22,13 +22,13 @@ jobs:
     - name: Configure CMake
       run: |
         cmake -S. -Bbuild \
-          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_OSX_ARCHITECTURES=x86_64
   
     - name: Build
       run: |
         cd build
-        cmake --build . --config Debug -j 2
+        cmake --build . --config Debug -j 3
     
     - name: Test
       run: |
