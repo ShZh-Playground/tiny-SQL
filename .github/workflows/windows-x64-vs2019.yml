@@ -8,9 +8,6 @@ on:
     branches: [master]
     paths-ignore: ['**.md']
 
-env:
-  BUILD_TYPE: Debug
-
 jobs:
   build:
     runs-on: windows-latest
@@ -24,13 +21,13 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Debug
   
     - name: Build
       run: |
         cd build
-        cmake --build . --config $BUILD_TYPE -j 2
+        cmake --build . --config Debug -j 2
     
     - name: Test
       run: |
-        Get-ChildItem build -recurse
+        .\build\test\Debug\test_add.exe
