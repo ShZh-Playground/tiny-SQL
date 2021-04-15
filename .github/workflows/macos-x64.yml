@@ -32,4 +32,5 @@ jobs:
     
     - name: Test
       run: |
-        ./build/test/test_add
+        cd build
+        ctest -C Debug --output-on-failure --verbose
