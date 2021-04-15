@@ -4,9 +4,9 @@ project(tinyDB VERSION 1.0.0)
 # Compiler options
 set(CMAKE_CXX_STANDARD 17)
 # Disable MSVC unnessary warnings
-# if(MSVC)
-# 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-# endif()
+if(MSVC)
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
 
 # Project skeleton
 set(SOURCE_DIR 	${PROJECT_SOURCE_DIR}/src)
@@ -16,15 +16,15 @@ set(CMAKE_DIR   ${PROJECT_SOURCE_DIR}/cmake)
 set(TEST_DIR    ${PROJECT_SOURCE_DIR}/test)
 
 # Build dynamic library for unit test
-add_library(tinyDB SHARED)
+add_library(tinyDB STATIC)
 target_include_directories(tinyDB
 	PUBLIC ${INCLUDE_DIR}
 )
 file(GLOB_RECURSE SRCS 	${SOURCE_DIR}/*.cc)
 target_sources(tinyDB PUBLIC ${SRCS})
-# if (MSVC)
-# 	target_compile_definitions(tinyDB PRIVATE DLL_EXPORT)
-# endif()
+if (MSVC)
+	target_compile_definitions(tinyDB PRIVATE DLL_EXPORT)
+endif()
 
 # Build SQL binary by modern cmake
 add_executable(tinyDBExe)
