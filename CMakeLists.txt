@@ -3,27 +3,33 @@ project(tinyDB VERSION 1.0.0)
 
 # Compiler options
 set(CMAKE_CXX_STANDARD 17)
-# set(CMAKE_BUILD_TYPE Debug) # default settings
+# Disable MSVC unnessary warnings
+# if(MSVC)
+# 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+# endif()
 
 # Project skeleton
 set(SOURCE_DIR 	${PROJECT_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(BINARY_DIR  ${PROJECT_SOURCE_DIR}/bin)
 set(CMAKE_DIR   ${PROJECT_SOURCE_DIR}/cmake)
-SET(TEST_DIR    ${PROJECT_SOURCE_DIR}/test)
+set(TEST_DIR    ${PROJECT_SOURCE_DIR}/test)
+
+# Build dynamic library for unit test
+add_library(tinyDB SHARED)
+target_include_directories(tinyDB
+	PUBLIC ${INCLUDE_DIR}
+)
+file(GLOB_RECURSE SRCS 	${SOURCE_DIR}/*.cc)
+target_sources(tinyDB PUBLIC ${SRCS})
+# if (MSVC)
+# 	target_compile_definitions(tinyDB PRIVATE DLL_EXPORT)
+# endif()
 
 # Build SQL binary by modern cmake
-add_executable(tinyDB)
-target_include_directories(
-	tinyDB PRIVATE ${INCLUDE_DIR}
-)
-file(GLOB_RECURSE SRCS ${SOURCE_DIR}/*.cc)
-target_sources(tinyDB PRIVATE ${SRCS} tinyDB.cc)
-
-# Disable MSVC unnessary warnings
-if(MSVC)
-    target_compile_definitions(tinyDB PRIVATE _CRT_SECURE_NO_WARNINGS)
-endif()
+add_executable(tinyDBExe)
+target_sources(tinyDBExe PRIVATE tinyDB.cc)
+target_link_libraries(tinyDBExe tinyDB)
 
 message("Current build type is " ${CMAKE_BUILD_TYPE})
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
@@ -31,7 +37,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 	add_subdirectory("test")
 else()
 	# Make a copy to ./bin when building
-	set_target_properties(tinyDB
+	set_target_properties(tinyDBExe
 		PROPERTIES
 		RUNTIME_OUTPUT_DIRECTORY ${BINARY_DIR}
 	)
