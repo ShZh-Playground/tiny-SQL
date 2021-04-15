@@ -23,12 +23,8 @@ jobs:
       run: |
         cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Debug
   
-    - name: Build
+    - name: Build and test
       run: |
         cd build
         cmake --build . --config Debug -j 2
     
-    - name: Test
-      run: |
-        cd build
-        ctest -C Debug --output-on-failure --verbose

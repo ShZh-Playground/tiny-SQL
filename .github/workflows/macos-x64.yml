@@ -25,12 +25,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_OSX_ARCHITECTURES=x86_64
   
-    - name: Build
+    - name: Build and test
       run: |
         cd build
         cmake --build . --config Debug -j 3
-    
-    - name: Test
-      run: |
-        cd build
-        ctest -C Debug --output-on-failure --verbose
