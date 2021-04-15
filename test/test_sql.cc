@@ -19,14 +19,13 @@ TEST(SqlTest, TestInsert) {
   // Test insert SQL statement
   auto insertStatement = parser.parse("insert 1 shzh shzh7@gmail.com");
   interpreter.execute(insertStatement);
-  std::string insertOutput = testing::internal::GetCapturedStdout();
-  ASSERT_STREQ("Insert OK\n", insertOutput.c_str());
 
   // Test select SQL statement
   auto selectStatement = parser.parse("select");
   interpreter.execute(selectStatement);
-  std::string selectOutput = testing::internal::GetCapturedStdout();
-  ASSERT_STREQ("( 1, shzh, shzh7@gmail.com )\n", selectOutput.c_str());
+
+  std::string output = testing::internal::GetCapturedStdout();
+  ASSERT_STREQ("Insert OK\n( 1, shzh, shzh7@gmail.com )\n", output.c_str());
 }
 
 int main() {
