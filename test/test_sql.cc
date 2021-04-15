@@ -19,7 +19,6 @@ TEST(SqlTest, TestInsert) {
   // Test insert SQL statement
   auto insertStatement = parser.parse("insert 1 shzh shzh7@gmail.com");
   interpreter.execute(insertStatement);
-  std::string insertOutput = testing::internal::GetCapturedStdout();
 
   // Test select SQL statement
   auto selectStatement = parser.parse("select");

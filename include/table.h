@@ -56,7 +56,7 @@ class Table {
   void insert(const Row& row);
 
   friend std::ostream& operator<<(std::ostream& os, const Table& table) {
-    for (int i = 0; i < table.index_; ++i) {
+    for (::uint32_t i = 0; i < table.index_; ++i) {
       ::uint32_t pageIndex = i / table.rowCountPerPage;
       ::uint32_t rowOffset = i % table.rowCountPerPage;
       Byte* addr = table.pages_[pageIndex] + rowOffset * Row::getSize();

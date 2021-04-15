@@ -57,7 +57,7 @@ bool compiler::Interpreter::visitMetaCommand(
 
 bool compiler::Interpreter::visitSelectSql(
     const SelectSql* sqlStatement) const {
-  std::cout << table;
+  std::cout << table << std::endl;
   return true;
 }
 
