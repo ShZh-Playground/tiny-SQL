@@ -39,7 +39,7 @@ TEST(SqlTest, TestIllegal) {
   ASSERT_STREQ("Unrecognized SQL statement, please check your input and try again!\n", output.c_str());
 }
 
-// int main() {
-//     ::testing::InitGoogleTest();
-//     return RUN_ALL_TESTS();
-// }
+int main() {
+  ::testing::InitGoogleTest();
+  return RUN_ALL_TESTS();
+}

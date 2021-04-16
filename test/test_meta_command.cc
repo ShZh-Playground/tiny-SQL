@@ -31,3 +31,8 @@ TEST(CommandTest, TestIllegal) {
   std::string output = testing::internal::GetCapturedStdout();
   ASSERT_STREQ("Unrecognized meta command, please check your input and try again!\n", output.c_str());
 }
+
+int main() {
+  ::testing::InitGoogleTest();
+  return RUN_ALL_TESTS();
+}
