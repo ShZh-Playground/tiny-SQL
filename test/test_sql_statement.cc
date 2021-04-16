@@ -28,7 +28,18 @@ TEST(SqlTest, TestInsert) {
   ASSERT_STREQ("Insert OK\n( 1, shzh, shzh7@gmail.com )\n", output.c_str());
 }
 
-int main() {
-    ::testing::InitGoogleTest();
-    return RUN_ALL_TESTS();
+TEST(SqlTest, TestIllegal) {
+  // Redirect iostream to string stream
+  testing::internal::CaptureStdout();
+  
+  auto illegalStatement = parser.parse("HelloWorld");
+  interpreter.execute(illegalStatement);
+
+  std::string output = testing::internal::GetCapturedStdout();
+  ASSERT_STREQ("Unrecognized SQL statement, please check your input and try again!\n", output.c_str());
 }
+
+// int main() {
+//     ::testing::InitGoogleTest();
+//     return RUN_ALL_TESTS();
+// }

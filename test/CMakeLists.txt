@@ -14,8 +14,7 @@ macro(tinyDB_add_test name)
 	add_executable(test_${name}
 		${TEST_DIR}/test_${name}.cc
 	)
-	# Specify compiling order, which will be automaticlly added
-	# add_dependencies(test_${name} gtest tinyDB)
+	# Compiling order will be implicitly specified
 	target_link_libraries(test_${name} gtest tinyDB)
 	gtest_discover_tests(test_${name})
 	# No need to use ctest
@@ -23,7 +22,8 @@ endmacro()
 
 # List of unit test files
 set(UNITTEST_SOURCES
-	sql
+	sql_statement
+	meta_command
 )
 
 foreach(test_file ${UNITTEST_SOURCES})

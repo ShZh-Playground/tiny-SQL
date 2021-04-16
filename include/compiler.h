@@ -11,7 +11,7 @@
 
 namespace compiler {
 
-const std::string requireCheck = "Please check your input and try again!";
+const std::string requireCheck = "please check your input and try again!";
 
 // 前向声明
 class Interpreter;
