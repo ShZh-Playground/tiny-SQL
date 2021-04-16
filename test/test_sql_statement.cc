@@ -3,7 +3,7 @@
 #include <string>
  
 #include "../include/compiler.h"
-#include "../include/table.h"
+#include "../include/memory.h"
 
 using compiler::CompilerFactory;
 using compiler::Parser;
@@ -33,7 +33,7 @@ TEST(SqlTest, TestIllegal) {
   testing::internal::CaptureStdout();
   
   auto illegalStatement = parser.parse("HelloWorld");
-  interpreter.execute(illegalStatement);
+  ASSERT_EQ(illegalStatement, nullptr);
 
   std::string output = testing::internal::GetCapturedStdout();
   ASSERT_STREQ("Unrecognized SQL statement, please check your input and try again!\n", output.c_str());

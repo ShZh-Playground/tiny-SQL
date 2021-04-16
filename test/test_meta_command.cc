@@ -3,7 +3,7 @@
 #include <string>
  
 #include "../include/compiler.h"
-#include "../include/table.h"
+#include "../include/memory.h"
 
 using compiler::CompilerFactory;
 using compiler::Parser;
@@ -26,7 +26,7 @@ TEST(CommandTest, TestIllegal) {
   // Redirect iostream to string stream
   testing::internal::CaptureStdout();
   auto illegalCommand = parser.parse(".HelloWorld");
-  ASSERT_EQ(illegalCommand, nullptr);
+  interpreter.execute(illegalCommand);
 
   std::string output = testing::internal::GetCapturedStdout();
   ASSERT_STREQ("Unrecognized meta command, please check your input and try again!\n", output.c_str());
