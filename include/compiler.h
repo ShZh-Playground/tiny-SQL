@@ -7,7 +7,7 @@
 #include <string>
 #include <tuple>
 
-#include "../include/table.h"
+#include "memory.h"
 
 namespace compiler {
 

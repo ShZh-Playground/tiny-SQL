@@ -3,7 +3,7 @@
 #include <cstdlib>
 
 // 全局变量
-extern memory::Table table;
+extern memory::Table* table;
 
 bool compiler::MetaCommand::accept(const Interpreter* interpreter) const {
   return interpreter->visitMetaCommand(this);
@@ -47,6 +47,7 @@ void compiler::Interpreter::visit(
 bool compiler::Interpreter::visitMetaCommand(
     const MetaCommand* metaCommand) const {
   if (".exit" == metaCommand->getInput()) {
+    delete table;
     std::cout << "Bye" << std::endl;
     exit(0);
   } else {
@@ -57,13 +58,13 @@ bool compiler::Interpreter::visitMetaCommand(
 
 bool compiler::Interpreter::visitSelectSql(
     const SelectSql* sqlStatement) const {
-  std::cout << table;
+  std::cout << *table;
   return true;
 }
 
 bool compiler::Interpreter::visitInsertSql(
     const InsertSql* sqlStatement) const {
-  table.insert(sqlStatement->getRow());
+  table->insert(sqlStatement->getRow());
   std::cout << "Insert OK" << std::endl;
   return true;
 }
