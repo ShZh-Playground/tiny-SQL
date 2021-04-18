@@ -1,0 +1,14 @@
+{
+  "terminal.integrated.shell.windows": "D:\\msys2\\usr\\bin\\bash.exe",
+  "terminal.integrated.env.windows": {
+    "MSYSTEM": "MINGW64",
+    "CHERE_INVOKING": "1",
+    "MSYS2_PATH_TYPE": "inherit"
+  },
+  "files.associations": {
+    "*.tcc": "cpp",
+    "fstream": "cpp",
+    "system_error": "cpp",
+    "iosfwd": "cpp"
+  },
+}
