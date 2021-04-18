@@ -7,6 +7,12 @@
 #include <iostream>
 #include <memory>
 
+#include "cursor.h"
+
+namespace cursor {
+  class Cursor;
+}
+
 namespace memory {
 
 using Byte = char;
@@ -42,7 +48,7 @@ class Pager {
  private:
   Byte* pages_[kMaxPageNum];
 
-  std::fstream file_;
+  std::fstream& file_;
 
   ::uint32_t fileSize_;
 
@@ -51,7 +57,7 @@ class Pager {
   void persist(::uint32_t remainedMem);
 
  public:
-  explicit Pager(const char* filename);
+  explicit Pager(std::fstream& file);
 
   ~Pager();
 
@@ -64,16 +70,21 @@ class Table {
  private:
   Pager* pager_;
 
-  ::uint32_t index_;  // Table需要自己维护一个递增的索引
+  ::uint32_t rowNum_;
+
+  // Table需要自己维护一个递增的索引
+  cursor::Cursor* cursor_;
 
   Byte* getInsertAddr();
 
   const ::uint32_t kRowCountPerPage = kPageSize / Row::getSize();
 
  public:
-  explicit Table(const char* filename);
+  explicit Table(std::fstream& file);
 
   ~Table();
+
+  auto getRowNum() const { return this->rowNum_; }
 
   void insert(const Row& row);
 

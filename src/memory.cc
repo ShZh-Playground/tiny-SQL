@@ -1,5 +1,7 @@
 #include<cstring>
+#include<fstream>
 
+#include "../include/cursor.h"
 #include "../include/memory.h"
 
 using memory::Pager;
@@ -7,7 +9,14 @@ using memory::Table;
 
 // 内存中的数据
 // 这里只能用全局变量实现
-Table* table  = new Table("student.db");
+std::fstream file {
+    "student.db", 
+    std::fstream::binary  | 
+    std::fstream::in      | 
+    std::fstream::out     | 
+    std::fstream::app
+};
+Table* table  = new Table(file);
 
 // namespace中的非成员函数要加上namespace来标识
 // 不然编译器会认为可能你又定义了一个函数
@@ -36,8 +45,8 @@ memory::Row memory::loadFromMem(Byte* addr) {
 
 // fstream创造不存在的文件得用trunc, 想要读写还必须显示指定in和out
 // 另外fstream不可copy，所以这里只能重复构造
-Pager::Pager(const char* filename)
-  : file_(filename, std::fstream::in | std::fstream::out | std::fstream::app) {
+Pager::Pager(std::fstream& file)
+  : file_(file) {
   this->fileSize_ = getFileSize(file_);
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;
   for (auto& page : this->pages_) {
@@ -91,46 +100,56 @@ memory::Byte* Pager::getPage(::uint32_t index) {
       ++this->totalPage_;
     }
   }
-
   return this->pages_[index];
 }
 
-Table::Table(const char* filename) {
-  std::fstream file{ filename, std::fstream::in | std::fstream::out | std::fstream::app };
+Table::Table(std::fstream& file) {
   // index初始值由持久化的文件决定
-  this->index_ = getFileSize(file) / Row::getSize();
-  this->pager_ = new Pager{ filename };
+  this->rowNum_ = getFileSize(file) / Row::getSize();
+  this->cursor_ = new cursor::Cursor{ *this, this->rowNum_ - 1 };
+  this->pager_ = new Pager{ file };
 }
 
 Table::~Table() {
-  this->pager_->close(this->index_ * Row::getSize() % kPageSize);
+  // Pass remainde byte
+  // 总数为索引 + 1
+  this->cursor_->setEnd();
+  this->pager_->close(this->cursor_->getCurIndex() * Row::getSize() % kPageSize);
   delete this->pager_;
+  delete this->cursor_;
 }
 
 memory::Byte* Table::getInsertAddr() {
-  ::uint32_t pageIndex = this->index_ / this->kRowCountPerPage;
-  ::uint16_t rowOffset = this->index_ % this->kRowCountPerPage;
-  auto page = this->pager_->getPage(pageIndex);
+  auto pageIndex = this->cursor_->getCurIndex() / this->kRowCountPerPage;
+  auto rowOffset = this->cursor_->getCurIndex() % this->kRowCountPerPage;
+  auto* page = this->pager_->getPage(pageIndex);
   memory::Byte* insertAddr = page + rowOffset * memory::Row::getSize();
 
   return insertAddr;
 }
 
 void Table::insert(const Row& row) {
+  this->cursor_->setEnd();
+  ++this->rowNum_;
   auto* insertAddr = this->getInsertAddr();
   saveToMem(row, insertAddr);
-  ++this->index_;
 }
 
 std::ostream& memory::operator<<(std::ostream& os, const memory::Table& table) {
-  for (::uint32_t i = 0; i < table.index_; ++i) {
-    ::uint32_t pageIndex = i / table.kRowCountPerPage;
-    ::uint32_t rowOffset = i % table.kRowCountPerPage;
-    Byte* addr = table.pager_->getPage(pageIndex) + rowOffset * Row::getSize();
+  table.cursor_->setBegin();
+
+  while (!table.cursor_->isEnd()) {
+    auto index = table.cursor_->getCurIndex();
+    auto pageIndex = index / table.kRowCountPerPage;
+    auto rowOffset = index % table.kRowCountPerPage;
+    auto addr = table.pager_->getPage(pageIndex) + rowOffset * Row::getSize();
 
     auto row = loadFromMem(addr);
     os << "( " << row.id << ", " << row.name << ", " << row.email << " )"
         << std::endl;
+    
+    table.cursor_->advance();
   }
+
   return os;
 }
