@@ -58,7 +58,7 @@ class Pager {
  public:
   explicit Pager(std::fstream& file);
 
-  ~Pager();
+  ~Pager() noexcept;
 
   Byte* getPage(::uint32_t index);
 
@@ -81,7 +81,7 @@ class Table {
  public:
   explicit Table(std::fstream& file);
 
-  ~Table();
+  ~Table() noexcept;
 
   auto getRowNum() const { return this->rowNum_; }
 
