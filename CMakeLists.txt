@@ -30,6 +30,11 @@ endif()
 add_executable(tinyDBExe)
 target_sources(tinyDBExe PRIVATE tinyDB.cc)
 target_link_libraries(tinyDBExe tinyDB)
+# Rename output filename to `tinyDB`
+set_target_properties(tinyDBExe
+	PROPERTIES 
+	OUTPUT_NAME "tinyDB"
+)
 
 message("Current build type is " ${CMAKE_BUILD_TYPE})
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
@@ -38,7 +43,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 else()
 	# Make a copy to ./bin when building
 	set_target_properties(tinyDBExe
-		PROPERTIES
+		PROPERTIES 
 		RUNTIME_OUTPUT_DIRECTORY ${BINARY_DIR}
 	)
 endif()
