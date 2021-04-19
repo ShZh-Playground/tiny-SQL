@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <string_view>
 
 #include "memory.h"
 
@@ -19,26 +20,26 @@ class Interpreter;
 // 访问者模式
 class CmdInput {
  protected:
-  const std::string input_;
+  std::string_view input_;
 
  public:
-  CmdInput(const std::string& input) : input_(input) {}
+  CmdInput(std::string_view input) : input_(input) {}
 
-  const std::string& getInput() const { return this->input_; }
+  std::string_view getInput() const { return this->input_; }
 
   virtual bool accept(const Interpreter* interpreter) const = 0;
 };
 
 class MetaCommand : public CmdInput {
  public:
-  MetaCommand(const std::string& input) : CmdInput(input) {}
+  MetaCommand(std::string_view input) : CmdInput(input) {}
 
   bool accept(const Interpreter* interpreter) const override;
 };
 
 class SelectSql : public CmdInput {
  public:
-  SelectSql(const std::string& input) : CmdInput(input) {}
+  SelectSql(std::string_view input) : CmdInput(input) {}
 
   bool accept(const Interpreter* interpreter) const override;
 };
@@ -48,8 +49,8 @@ class InsertSql : public CmdInput {
   memory::Row row{};
 
  public:
-  InsertSql(const std::string& input) : CmdInput(input) {
-    sscanf(input.c_str(), "insert %d %s %s", &row.id, row.name, row.email);
+  InsertSql(std::string_view input) : CmdInput(input) {
+    sscanf(input.data(), "insert %d %s %s", &row.id, row.name, row.email);
   }
 
   memory::Row getRow() const { return this->row; }
@@ -62,7 +63,7 @@ class Parser {
   friend class CompilerFactory;
 
  public:
-  static std::unique_ptr<CmdInput> parse(const std::string& input);
+  static std::unique_ptr<CmdInput> parse(std::string_view input);
 };
 
 class Interpreter {

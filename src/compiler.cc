@@ -1,6 +1,7 @@
 #include "../include/compiler.h"
 
 #include <cstdlib>
+#include <string_view>
 
 // 全局变量
 extern memory::Table* table;
@@ -18,7 +19,7 @@ bool compiler::InsertSql::accept(const Interpreter* Interpreter) const {
 }
 
 std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
-    const std::string& input) {
+    std::string_view input) {
   // 不合法的输入
   if (input.empty()) {
     return nullptr;
