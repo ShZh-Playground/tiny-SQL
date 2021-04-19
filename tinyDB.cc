@@ -3,9 +3,11 @@
 
 #include"../include/compiler.h"
 
+using compiler::CompilerFactory;
+
 int main() {
-  auto parser = compiler::CompilerFactory::getParser();
-  auto interpreter = compiler::CompilerFactory::getInterpreter();
+  auto parser = CompilerFactory::getParser();
+  auto interpreter = CompilerFactory::getInterpreter();
 
   while (true) {
     std::string input;
