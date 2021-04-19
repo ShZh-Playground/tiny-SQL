@@ -1,9 +1,10 @@
-#include<cstring>
-#include<fstream>
-#include<filesystem>
+#include "../include/memory.h"
+
+#include <cstring>
+#include <filesystem>
+#include <fstream>
 
 #include "../include/cursor.h"
-#include "../include/memory.h"
 
 using memory::Pager;
 using memory::Table;
@@ -11,10 +12,11 @@ using memory::Table;
 // 内存中的数据
 // 这里只能用全局变量实现
 const char* filename = "student.db";
-auto file = std::filesystem::exists(filename) ?
-  std::fstream { filename, std::ios::in | std::ios::out } :
-  std::fstream { filename, std::ios::in | std::ios::out | std::ios::app};
-Table* table  = new Table(file);
+auto file =
+    std::filesystem::exists(filename)
+        ? std::fstream{filename, std::ios::in | std::ios::out}
+        : std::fstream{filename, std::ios::in | std::ios::out | std::ios::app};
+Table* table = new Table(file);
 
 // namespace中的非成员函数要加上namespace来标识
 // 不然编译器会认为可能你又定义了一个函数
@@ -23,7 +25,7 @@ void memory::saveToMem(const Row& row, Byte* addr) {
   ::memcpy(addr, &row.id, sizeof(row.id));
   ::memcpy(addr + sizeof(row.id), row.name, sizeof(row.name));
   ::memcpy(addr + sizeof(row.id) + sizeof(row.name), row.email,
-         sizeof(row.email));
+           sizeof(row.email));
 }
 
 memory::Row memory::loadFromMem(Byte* addr) {
@@ -31,13 +33,13 @@ memory::Row memory::loadFromMem(Byte* addr) {
   ::memcpy(&(row.id), addr, sizeof(row.id));
   ::memcpy(row.name, addr + sizeof(row.id), sizeof(row.name));
   ::memcpy(row.email, addr + sizeof(row.id) + sizeof(row.name),
-         sizeof(row.email));
+           sizeof(row.email));
   return row;
 }
 
 ::uint32_t memory::getFileSize(std::fstream& file) {
   ::uint32_t size = file.seekg(0, std::ios::end).tellg();
-  file.seekg(0, std::ios::beg);    // Rewind
+  file.seekg(0, std::ios::beg);  // Rewind
   return size;
 }
 
@@ -109,15 +111,16 @@ memory::Byte* Pager::getPage(::uint32_t index) {
 Table::Table(std::fstream& file) {
   // index初始值由持久化的文件决定
   this->rowNum_ = getFileSize(file) / Row::getSize();
-  this->cursor_ = new cursor::Cursor{ *this, this->rowNum_ - 1 };
-  this->pager_ = new Pager{ file };
+  this->cursor_ = new cursor::Cursor{*this, this->rowNum_ - 1};
+  this->pager_ = new Pager{file};
 }
 
 Table::~Table() {
   // Pass remainde byte
   // 总数为索引 + 1
   this->cursor_->setEnd();
-  this->pager_->close(this->cursor_->getCurIndex() * Row::getSize() % kPageSize);
+  this->pager_->close(this->cursor_->getCurIndex() * Row::getSize() %
+                      kPageSize);
   delete this->pager_;
   delete this->cursor_;
 }
@@ -145,12 +148,12 @@ std::ostream& memory::operator<<(std::ostream& os, const memory::Table& table) {
     auto index = table.cursor_->getCurIndex();
     auto pageIndex = index / table.kRowCountPerPage;
     auto rowOffset = index % table.kRowCountPerPage;
-    auto addr = table.pager_->getPage(pageIndex) + rowOffset * Row::getSize();
+    auto* addr = table.pager_->getPage(pageIndex) + rowOffset * Row::getSize();
 
     auto row = loadFromMem(addr);
     os << "( " << row.id << ", " << row.name << ", " << row.email << " )"
-        << std::endl;
-    
+       << std::endl;
+
     table.cursor_->advance();
   }
 

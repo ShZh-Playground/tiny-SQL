@@ -1,12 +1,14 @@
 #ifndef CURSOR_H__
 #define CURSOR_H__
 
-#include<cstdint>
+#include <cstdint>
 
-#include"memory.h"
+#include "memory.h"
 
 // 前向声明
-namespace memory { class Table; }
+namespace memory {
+class Table;
+}
 
 namespace cursor {
 
@@ -18,9 +20,9 @@ class Cursor {
 
  public:
   Cursor(memory::Table& table, ::uint32_t rowIndex);
-  
+
   [[nodiscard]] auto getCurIndex() const { return this->rowIndex_; }
-  
+
   bool isEnd() const { return this->isEnd_; }
 
   // For select
@@ -38,6 +40,6 @@ class Cursor {
   Cursor operator++(int);
 };
 
-} // namespace cursor ends
+}  // namespace cursor
 
-#endif // CURSOR_H__ ends
+#endif  // CURSOR_H__ ends

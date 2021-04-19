@@ -1,16 +1,16 @@
 #ifndef TABLE_H__
 #define TABLE_H__
 
+#include <cstdint>
 #include <cstdlib>
 #include <fstream>
-#include <cstdint>
 #include <iostream>
 #include <memory>
 
 #include "cursor.h"
 
 namespace cursor {
-  class Cursor;
+class Cursor;
 }
 
 namespace memory {
@@ -20,11 +20,10 @@ using Byte = char;
 struct Row;
 
 // 和大多数操作系统分页的大小一样，4096B
-constexpr ::uint32_t kPageSize = 4096;  
+constexpr ::uint32_t kPageSize = 4096;
 constexpr ::uint32_t kMaxPageNum = 50;
 constexpr ::uint32_t kNameMaxLength = 20;
 constexpr ::uint32_t kEmailMaxLength = 50;
-
 
 Row loadFromMem(Byte* addr);
 
