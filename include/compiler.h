@@ -62,18 +62,18 @@ class Parser {
   friend class CompilerFactory;
 
  public:
-  static std::shared_ptr<CmdInput> parse(const std::string& input);
+  static std::unique_ptr<CmdInput> parse(const std::string& input);
 };
 
 class Interpreter {
   friend class CompilerFactory;
 
  private:
-  void visit(const std::shared_ptr<CmdInput>& cmdInput) const;
+  void visit(std::unique_ptr<CmdInput>&& cmdInput) const;
 
  public:
-  void execute(const std::shared_ptr<CmdInput> cmdInput) {
-    this->visit(cmdInput);
+  void execute(std::unique_ptr<CmdInput>&& cmdInput) {
+    this->visit(std::move(cmdInput));
   }
 
   bool visitMetaCommand(const MetaCommand* metaCommand) const;

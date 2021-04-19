@@ -18,11 +18,11 @@ TEST(SqlTest, TestInsert) {
   
   // Test insert SQL statement
   auto insertStatement = parser.parse("insert 1 shzh shzh7@gmail.com");
-  interpreter.execute(insertStatement);
+  interpreter.execute(std::move(insertStatement));
 
   // Test select SQL statement
   auto selectStatement = parser.parse("select");
-  interpreter.execute(selectStatement);
+  interpreter.execute(std::move(selectStatement));
 
   std::string output = testing::internal::GetCapturedStdout();
   ASSERT_STREQ("Insert OK\n( 1, shzh, shzh7@gmail.com )\n", output.c_str());

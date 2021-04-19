@@ -27,7 +27,7 @@ TEST(CommandTest, TestIllegal) {
   // Redirect iostream to string stream
   testing::internal::CaptureStdout();
   auto illegalCommand = parser.parse(".HelloWorld");
-  interpreter.execute(illegalCommand);
+  interpreter.execute(std::move(illegalCommand));
 
   std::string output = testing::internal::GetCapturedStdout();
   ASSERT_STREQ("Unrecognized meta command, please check your input and try again!\n", output.c_str());

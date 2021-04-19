@@ -17,7 +17,7 @@ bool compiler::InsertSql::accept(const Interpreter* Interpreter) const {
   return Interpreter->visitInsertSql(this);
 }
 
-std::shared_ptr<compiler::CmdInput> compiler::Parser::parse(
+std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
     const std::string& input) {
   // 不合法的输入
   if (input.empty()) {
@@ -25,22 +25,21 @@ std::shared_ptr<compiler::CmdInput> compiler::Parser::parse(
   }
   // 以.起始的都不是sql语句，而是内置的命令
   if ('.' == input[0]) {
-    return std::make_shared<MetaCommand>(input);
+    return std::make_unique<MetaCommand>(input);
   }
   // SQL语句
   if ("select" == input.substr(0, 6)) {
-    return std::make_shared<SelectSql>(input);
+    return std::make_unique<SelectSql>(input);
   }
   if ("insert" == input.substr(0, 6)) {
-    return std::make_shared<InsertSql>(input);
+    return std::make_unique<InsertSql>(input);
   }
   std::cout << "Unrecognized SQL statement, " << requireCheck << std::endl;
 
   return nullptr;
 }
 
-void compiler::Interpreter::visit(
-    const std::shared_ptr<CmdInput>& cmdInput) const {
+void compiler::Interpreter::visit(std::unique_ptr<CmdInput>&& cmdInput) const {
   cmdInput->accept(this);
 }
 

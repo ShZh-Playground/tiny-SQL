@@ -17,7 +17,7 @@ int main() {
       continue;
     }
 
-    interpreter.execute(statement);
+    interpreter.execute(std::move(statement));
   }
 
   return 0;
