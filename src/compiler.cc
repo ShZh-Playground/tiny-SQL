@@ -35,7 +35,7 @@ std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
   if ("insert" == input.substr(0, 6)) {
     return std::make_unique<InsertSql>(input);
   }
-  std::cout << "Unrecognized SQL statement, " << requireCheck << std::endl;
+  std::cerr << "Error: unrecognized SQL statement, " << requireCheck << std::endl;
 
   return nullptr;
 }
@@ -51,7 +51,7 @@ bool compiler::Interpreter::visitMetaCommand(
     std::cout << "Bye" << std::endl;
     exit(0);
   } else {
-    std::cout << "Unrecognized meta command, " << requireCheck << std::endl;
+    std::cerr << "Error: unrecognized meta command, " << requireCheck << std::endl;
   }
   return false;
 }

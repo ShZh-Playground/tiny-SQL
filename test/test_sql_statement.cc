@@ -30,13 +30,13 @@ TEST(SqlTest, TestInsert) {
 
 TEST(SqlTest, TestIllegal) {
   // Redirect iostream to string stream
-  testing::internal::CaptureStdout();
+  testing::internal::CaptureStderr();
   
   auto illegalStatement = parser.parse("HelloWorld");
   ASSERT_EQ(illegalStatement, nullptr);
 
-  std::string output = testing::internal::GetCapturedStdout();
-  ASSERT_STREQ("Unrecognized SQL statement, please check your input and try again!\n", output.c_str());
+  std::string output = testing::internal::GetCapturedStderr();
+  ASSERT_STREQ("Error: unrecognized SQL statement, please check your input and try again!\n", output.c_str());
 }
 
 int main() {

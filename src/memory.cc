@@ -81,7 +81,7 @@ Pager::~Pager() {
 
 memory::Byte* Pager::getPage(::uint32_t index) {
   if (index >= kMaxPageNum) {
-    std::cout << "Page index out of bound!" << std::endl;
+    std::cerr << "Error: page index out of bound!" << std::endl;
     exit(-1);
   }
   // 把内存看成是磁盘的缓存

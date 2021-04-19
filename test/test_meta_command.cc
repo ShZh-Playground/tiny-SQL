@@ -25,12 +25,12 @@ auto interpreter = CompilerFactory::getInterpreter();
 
 TEST(CommandTest, TestIllegal) {
   // Redirect iostream to string stream
-  testing::internal::CaptureStdout();
+  testing::internal::CaptureStderr();
   auto illegalCommand = parser.parse(".HelloWorld");
   interpreter.execute(std::move(illegalCommand));
 
-  std::string output = testing::internal::GetCapturedStdout();
-  ASSERT_STREQ("Unrecognized meta command, please check your input and try again!\n", output.c_str());
+  std::string output = testing::internal::GetCapturedStderr();
+  ASSERT_STREQ("Error: unrecognized meta command, please check your input and try again!\n", output.c_str());
 }
 
 int main() {
