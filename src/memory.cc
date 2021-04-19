@@ -1,5 +1,6 @@
 #include<cstring>
 #include<fstream>
+#include<filesystem>
 
 #include "../include/cursor.h"
 #include "../include/memory.h"
@@ -9,13 +10,10 @@ using memory::Table;
 
 // 内存中的数据
 // 这里只能用全局变量实现
-std::fstream file {
-    "student.db", 
-    std::fstream::binary  | 
-    std::fstream::in      | 
-    std::fstream::out     | 
-    std::fstream::app
-};
+const char* filename = "student.db";
+auto file = std::filesystem::exists(filename) ?
+  std::fstream { filename, std::ios::in | std::ios::out } :
+  std::fstream { filename, std::ios::in | std::ios::out | std::ios::app};
 Table* table  = new Table(file);
 
 // namespace中的非成员函数要加上namespace来标识
@@ -29,7 +27,7 @@ void memory::saveToMem(const Row& row, Byte* addr) {
 }
 
 memory::Row memory::loadFromMem(Byte* addr) {
-  memory::Row row{};
+  memory::Row row;
   ::memcpy(&(row.id), addr, sizeof(row.id));
   ::memcpy(row.name, addr + sizeof(row.id), sizeof(row.name));
   ::memcpy(row.email, addr + sizeof(row.id) + sizeof(row.name),
@@ -45,8 +43,7 @@ memory::Row memory::loadFromMem(Byte* addr) {
 
 // fstream创造不存在的文件得用trunc, 想要读写还必须显示指定in和out
 // 另外fstream不可copy，所以这里只能重复构造
-Pager::Pager(std::fstream& file)
-  : file_(file) {
+Pager::Pager(std::fstream& file) : file_(file) {
   this->fileSize_ = getFileSize(file_);
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;
   for (auto& page : this->pages_) {
@@ -55,6 +52,7 @@ Pager::Pager(std::fstream& file)
 }
 
 void Pager::persist(::uint32_t remainedMem) {
+  this->file_.seekp(0, std::ios::beg);
   // 把完整的页：大小为kPageSize的保存下来
   for (int i = 0; i < this->totalPage_ - 1; ++i) {
     this->file_.write(this->pages_[i], kPageSize);
@@ -66,7 +64,9 @@ void Pager::close(::uint32_t remainedMem) {
   // 持久化到硬盘上
   persist(remainedMem);
   // 关闭文件流
-  this->file_.close();
+  if (this->file_.is_open()) {
+    this->file_.close();
+  }
 }
 
 Pager::~Pager() {
@@ -100,6 +100,9 @@ memory::Byte* Pager::getPage(::uint32_t index) {
       ++this->totalPage_;
     }
   }
+  // read没有读满会使failbit置位
+  // 后面对文件的操作统统无效
+  this->file_.clear();
   return this->pages_[index];
 }
 
