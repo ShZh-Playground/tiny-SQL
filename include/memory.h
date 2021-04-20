@@ -31,6 +31,7 @@ void saveToMem(const Row& row, Byte* addr);
 
 ::uint32_t getFileSize(std::fstream& file);
 
+#pragma pack(1)
 struct Row {
   ::uint32_t id;
 
@@ -42,6 +43,7 @@ struct Row {
     return sizeof(id) + sizeof(name) + sizeof(email);
   }
 };
+#pragma()
 
 class Pager {
  private:

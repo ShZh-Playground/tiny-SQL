@@ -22,18 +22,12 @@ Table* table = new Table(file);
 // 不然编译器会认为可能你又定义了一个函数
 void memory::saveToMem(const Row& row, Byte* addr) {
   // 不采用默认的对齐方式，内存之间直接紧挨着
-  ::memcpy(addr, &row.id, sizeof(row.id));
-  ::memcpy(addr + sizeof(row.id), row.name, sizeof(row.name));
-  ::memcpy(addr + sizeof(row.id) + sizeof(row.name), row.email,
-           sizeof(row.email));
+  ::memcpy(addr, &row, sizeof(row));
 }
 
 memory::Row memory::loadFromMem(Byte* addr) {
   memory::Row row;
-  ::memcpy(&(row.id), addr, sizeof(row.id));
-  ::memcpy(row.name, addr + sizeof(row.id), sizeof(row.name));
-  ::memcpy(row.email, addr + sizeof(row.id) + sizeof(row.name),
-           sizeof(row.email));
+  ::memcpy(&row, addr, sizeof(row));
   return row;
 }
 
