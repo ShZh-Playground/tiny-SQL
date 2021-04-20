@@ -65,7 +65,7 @@ void Pager::close(::uint32_t remainedMem) {
   }
 }
 
-Pager::~Pager() {
+Pager::~Pager() noexcept {
   // 清空申请的堆内存
   for (auto& page : this->pages_) {
     if (page) {
@@ -109,7 +109,7 @@ Table::Table(std::fstream& file) {
   this->pager_ = new Pager{file};
 }
 
-Table::~Table() {
+Table::~Table() noexcept {
   // Pass remainde byte
   // 总数为索引 + 1
   this->cursor_->setEnd();
