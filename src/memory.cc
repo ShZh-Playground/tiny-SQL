@@ -25,17 +25,9 @@ static u32 memory::getFileSize(std::fstream& file) {
   return size;
 }
 
-// // index指向最后一条record的后一个时候设置end标记
-// Cursor::Cursor(
-//   ::uint32_t pageIndex = 0, 
-//   ::uint32_t cellIndex = 0
-// ) : pageIndex_(pageIndex),
-//     cellIndex_(cellIndex) {}
-
 void Cursor::advance() {
   if (this->cellIndex_ < structure::kMaxCells) {
     ++this->cellIndex_;
-    // this->isEnd_ = this->cellIndex_ >= kMaxCells;
   } else {
     std::cerr << "Full page!" << std::endl;
     exit(-1);

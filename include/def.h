@@ -1,5 +1,4 @@
-#ifndef DEF_H__
-#define DEF_H__
+#pragma once
 
 #include<cstdint>
 #include<variant>
@@ -16,5 +15,3 @@ using Addr = char*;
 enum Error {
 
 };
-
-#endif // DEF_H__ 

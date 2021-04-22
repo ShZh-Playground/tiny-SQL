@@ -1,5 +1,4 @@
-#ifndef TABLE_H__
-#define TABLE_H__
+#pragma once
 
 #include "def.h"
 #include "btree.h"
@@ -120,5 +119,3 @@ std::ostream& operator<<(std::ostream& os, const Table& table);
 std::ostream& operator<<(std::ostream& os, const Row& row);
 
 }  // namespace memory
-
-#endif  // TABLE_H__ ends

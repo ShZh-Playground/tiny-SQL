@@ -1,5 +1,4 @@
-#ifndef COMPILER_H__
-#define COMPILER_H__
+#pragma once
 
 #include <cstdio>
 #include <iostream>
@@ -97,5 +96,3 @@ class CompilerFactory {
 };
 
 }  // namespace compiler
-
-#endif  // COMPILER_H__ marco ends
