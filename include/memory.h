@@ -1,6 +1,7 @@
 #ifndef TABLE_H__
 #define TABLE_H__
 
+#include "def.h"
 #include "btree.h"
 #include "memory.h"
 
@@ -16,12 +17,12 @@ namespace memory {
 using Byte = char;
 
 // 和大多数操作系统分页的大小一样，4096B
-constexpr ::uint32_t kPageSize        = 4096;
-constexpr ::uint32_t kMaxPageNum      = 50;
-constexpr ::uint32_t kNameMaxLength   = 20;
-constexpr ::uint32_t kEmailMaxLength  = 50;
+constexpr u32 kPageSize        = 4096;
+constexpr u32 kMaxPageNum      = 50;
+constexpr u32 kNameMaxLength   = 20;
+constexpr u32 kEmailMaxLength  = 50;
 
-static ::uint32_t getFileSize(std::fstream& file);
+static u32 getFileSize(std::fstream& file);
 
 template<typename T>
 void saveToMemory(void* addr, T obj) {
@@ -38,13 +39,13 @@ T loadFromMemory(void* addr) {
 #pragma pack(push)
 #pragma pack(1)
 struct Row {
-  ::uint32_t id;
+  u32 id;
 
   char name[kNameMaxLength];
 
   char email[kEmailMaxLength];
 
-  constexpr static ::uint32_t getSize() {
+  constexpr static u32 getSize() {
     return sizeof(id) + sizeof(name) + sizeof(email);
   }
 
@@ -54,13 +55,11 @@ struct Row {
 
 class Cursor {
  private:
-  ::uint32_t pageIndex_;
+  u32 pageIndex_;
 
-  ::uint32_t cellIndex_;
+  u32 cellIndex_;
 
  public:
-  Cursor(::uint32_t pageIndex_, ::uint32_t cellIndex_);
-
   [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
 
   [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
@@ -80,9 +79,9 @@ class Pager {
 
   std::fstream& file_;
 
-  ::uint32_t fileSize_;
+  u32 fileSize_;
 
-  ::uint32_t totalPage_;
+  u32 totalPage_;
 
   void persist();
 
@@ -91,7 +90,7 @@ class Pager {
 
   ~Pager() noexcept;
 
-  Byte* getPage(::uint32_t index);
+  Byte* getPage(u32 index);
 };
 
 class Table {
@@ -103,7 +102,7 @@ class Table {
   Cursor* cursor_;
 
   // 用根节点来表示是哪一个树
-  ::uint32_t rootIndex_;
+  u32 rootIndex_;
 
  public:
   explicit Table(std::fstream& file);

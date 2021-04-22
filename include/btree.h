@@ -1,13 +1,14 @@
 #ifndef BTREE_H__
 #define BTREE_H__
 
+#include "def.h"
+#include "memory.h"
+
 #include<array>
 #include<vector>
 #include<string>
 #include<cstdint>
 #include<utility>
-
-#include "memory.h"
 
 namespace structure {
 
@@ -27,26 +28,26 @@ struct Pair {
 template<typename T1, typename T2>
 Pair(T1, T2) -> Pair<T1, T2>;
 
-enum NodeType : ::uint8_t {
+enum NodeType : u8 {
   kNodeInternal,
   kNodeLeaf,
 };
 
 struct NodeHeader {
-  NodeType    nodeType_;
-  ::uint8_t   isRoot_;
-  ::uint32_t  parentPointer_;
+  NodeType  nodeType_;
+  u8        isRoot_;
+  u32       parentPointer_;
 };
 
 struct LeafNodeHeader {
-  ::uint32_t cellsCount_;
+  u32 cellsCount_;
 };
 
-constexpr ::uint32_t kMaxCells =  \
+constexpr u32 kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader))
-  / sizeof(Pair<::uint32_t, memory::Row>);
+  / sizeof(Pair<u32, memory::Row>);
 
-using Cell = Pair<::uint32_t, memory::Row>;
+using Cell = Pair<u32, memory::Row>;
 
 struct LeafNodeBody {
   std::array<Cell, kMaxCells> cells;

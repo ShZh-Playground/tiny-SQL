@@ -1,3 +1,4 @@
+#include "../include/def.h"
 #include "../include/btree.h"
 #include "../include/memory.h"
 
@@ -18,18 +19,18 @@ auto file =
         : std::fstream{filename, std::ios::in | std::ios::out | std::ios::app};
 Table* table = new Table(file);
 
-static ::uint32_t memory::getFileSize(std::fstream& file) {
-  ::uint32_t size = file.seekg(0, std::ios::end).tellg();
+static u32 memory::getFileSize(std::fstream& file) {
+  u32 size = file.seekg(0, std::ios::end).tellg();
   file.seekg(0, std::ios::beg);  // Rewind
   return size;
 }
 
-// index指向最后一条record的后一个时候设置end标记
-Cursor::Cursor(
-  ::uint32_t pageIndex = 0, 
-  ::uint32_t cellIndex = 0
-) : pageIndex_(pageIndex),
-    cellIndex_(cellIndex) {}
+// // index指向最后一条record的后一个时候设置end标记
+// Cursor::Cursor(
+//   ::uint32_t pageIndex = 0, 
+//   ::uint32_t cellIndex = 0
+// ) : pageIndex_(pageIndex),
+//     cellIndex_(cellIndex) {}
 
 void Cursor::advance() {
   if (this->cellIndex_ < structure::kMaxCells) {
@@ -88,7 +89,7 @@ Pager::~Pager() noexcept {
   }
 }
 
-memory::Byte* Pager::getPage(::uint32_t index) {
+memory::Byte* Pager::getPage(u32 index) {
   if (index >= kMaxPageNum) {
     std::cerr << "Error: page index out of bound!" << std::endl;
     exit(-1);
@@ -146,7 +147,7 @@ std::ostream& memory::operator<<(std::ostream& os, const memory::Table& table) {
   auto* page = table.pager_->getPage(table.cursor_->getPageIndex());
   auto node = reinterpret_cast<structure::LeafNode*>(page);
 
-  for (int i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
+  for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
     std::cout << node->leafNodeBody_.cells[i].value_ << std::endl;
   }
 
