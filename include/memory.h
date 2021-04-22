@@ -1,35 +1,38 @@
 #ifndef TABLE_H__
 #define TABLE_H__
 
+#include "btree.h"
+#include "memory.h"
+
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <memory>
 
-#include "cursor.h"
-
-namespace cursor {
-class Cursor;
-}
-
 namespace memory {
 
 using Byte = char;
 
-struct Row;
-
 // 和大多数操作系统分页的大小一样，4096B
-constexpr ::uint32_t kPageSize = 4096;
-constexpr ::uint32_t kMaxPageNum = 50;
-constexpr ::uint32_t kNameMaxLength = 20;
-constexpr ::uint32_t kEmailMaxLength = 50;
+constexpr ::uint32_t kPageSize        = 4096;
+constexpr ::uint32_t kMaxPageNum      = 50;
+constexpr ::uint32_t kNameMaxLength   = 20;
+constexpr ::uint32_t kEmailMaxLength  = 50;
 
-Row loadFromMem(Byte* addr);
+static ::uint32_t getFileSize(std::fstream& file);
 
-void saveToMem(const Row& row, Byte* addr);
+template<typename T>
+void saveToMemory(void* addr, T obj) {
+  ::memcpy(addr, std::addressof(obj), sizeof(T));
+}
 
-::uint32_t getFileSize(std::fstream& file);
+template<typename T>
+T loadFromMemory(void* addr) {
+  T ret {};
+  ::memcpy(std::addressof(ret), addr, sizeof(T));
+  return ret;
+}
 
 #pragma pack(push)
 #pragma pack(1)
@@ -43,8 +46,32 @@ struct Row {
   constexpr static ::uint32_t getSize() {
     return sizeof(id) + sizeof(name) + sizeof(email);
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const Row& row);
 };
 #pragma pack(pop)
+
+class Cursor {
+ private:
+  ::uint32_t pageIndex_;
+
+  ::uint32_t cellIndex_;
+
+ public:
+  Cursor(::uint32_t pageIndex_, ::uint32_t cellIndex_);
+
+  [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
+
+  [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
+
+  void advance();
+
+  // 前置++
+  Cursor operator++();
+
+  // 后置++
+  Cursor operator++(int);
+};
 
 class Pager {
  private:
@@ -56,7 +83,7 @@ class Pager {
 
   ::uint32_t totalPage_;
 
-  void persist(::uint32_t remainedMem);
+  void persist();
 
  public:
   explicit Pager(std::fstream& file);
@@ -64,36 +91,33 @@ class Pager {
   ~Pager() noexcept;
 
   Byte* getPage(::uint32_t index);
-
-  void close(::uint32_t remainedMem);
 };
 
 class Table {
  private:
+  // 控制页面（节点）
   Pager* pager_;
 
-  ::uint32_t rowNum_;
+  // 控制节点中的记录
+  Cursor* cursor_;
 
-  // Table需要自己维护一个递增的索引
-  cursor::Cursor* cursor_;
-
-  Byte* getInsertAddr();
-
-  const ::uint32_t kRowCountPerPage = kPageSize / Row::getSize();
+  // 用根节点来表示是哪一个树
+  ::uint32_t rootIndex_;
 
  public:
   explicit Table(std::fstream& file);
 
   ~Table() noexcept;
 
-  auto getRowNum() const { return this->rowNum_; }
-
-  void insert(const Row& row);
+  template<typename Record>
+  void insert(const Record&);
 
   friend std::ostream& operator<<(std::ostream& os, const Table& table);
 };
 
 std::ostream& operator<<(std::ostream& os, const Table& table);
+
+std::ostream& operator<<(std::ostream& os, const Row& row);
 
 }  // namespace memory
 

@@ -41,7 +41,7 @@ std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
   return nullptr;
 }
 
-void compiler::Interpreter::visit(std::unique_ptr<CmdInput>&& cmdInput) const {
+void compiler::Interpreter::visit(std::unique_ptr<CmdInput> cmdInput) const {
   cmdInput->accept(this);
 }
 
@@ -66,7 +66,7 @@ bool compiler::Interpreter::visitSelectSql(
 
 bool compiler::Interpreter::visitInsertSql(
     const InsertSql* sqlStatement) const {
-  table->insert(sqlStatement->getRow());
+  table->insert(structure::Pair(1U, sqlStatement->getRow()));
   std::cout << "Insert OK" << std::endl;
   return true;
 }

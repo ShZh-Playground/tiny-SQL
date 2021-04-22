@@ -1,11 +1,11 @@
+#include "../include/btree.h"
 #include "../include/memory.h"
 
 #include <cstring>
 #include <filesystem>
 #include <fstream>
 
-#include "../include/cursor.h"
-
+using memory::Cursor;
 using memory::Pager;
 using memory::Table;
 
@@ -18,58 +18,71 @@ auto file =
         : std::fstream{filename, std::ios::in | std::ios::out | std::ios::app};
 Table* table = new Table(file);
 
-// namespace中的非成员函数要加上namespace来标识
-// 不然编译器会认为可能你又定义了一个函数
-void memory::saveToMem(const Row& row, Byte* addr) {
-  // 不采用默认的对齐方式，内存之间直接紧挨着
-  ::memcpy(addr, &row, sizeof(row));
-}
-
-memory::Row memory::loadFromMem(Byte* addr) {
-  memory::Row row;
-  ::memcpy(&row, addr, sizeof(row));
-  return row;
-}
-
-::uint32_t memory::getFileSize(std::fstream& file) {
+static ::uint32_t memory::getFileSize(std::fstream& file) {
   ::uint32_t size = file.seekg(0, std::ios::end).tellg();
   file.seekg(0, std::ios::beg);  // Rewind
   return size;
 }
 
-// fstream创造不存在的文件得用trunc, 想要读写还必须显示指定in和out
-// 另外fstream不可copy，所以这里只能重复构造
+// index指向最后一条record的后一个时候设置end标记
+Cursor::Cursor(
+  ::uint32_t pageIndex = 0, 
+  ::uint32_t cellIndex = 0
+) : pageIndex_(pageIndex),
+    cellIndex_(cellIndex) {}
+
+void Cursor::advance() {
+  if (this->cellIndex_ < structure::kMaxCells) {
+    ++this->cellIndex_;
+    // this->isEnd_ = this->cellIndex_ >= kMaxCells;
+  } else {
+    std::cerr << "Full page!" << std::endl;
+    exit(-1);
+  }
+}
+
+Cursor Cursor::operator++() {
+  this->advance();
+  return *this;
+}
+
+Cursor Cursor::operator++([[maybe_unused]] int n) {
+  auto ret = *this;
+  this->advance();
+  return ret;
+}
+
 Pager::Pager(std::fstream& file) : file_(file) {
   this->fileSize_ = getFileSize(file_);
+  if (this->fileSize_ % kPageSize != 0) {
+    std::cerr << "Error: Wrong file size! Incomplete page apper!" << std::endl;
+    exit(-1);
+  }
+
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;
   for (auto& page : this->pages_) {
     page = nullptr;
   }
 }
 
-void Pager::persist(::uint32_t remainedMem) {
+void Pager::persist() {
   this->file_.seekp(0, std::ios::beg);
-  // 把完整的页：大小为kPageSize的保存下来
-  for (int i = 0; i < this->totalPage_ - 1; ++i) {
+  for (int i = 0; i < this->totalPage_; ++i) {
     this->file_.write(this->pages_[i], kPageSize);
-  }
-  this->file_.write(this->pages_[this->totalPage_ - 1], remainedMem);
-}
-
-void Pager::close(::uint32_t remainedMem) {
-  // 持久化到硬盘上
-  persist(remainedMem);
-  // 关闭文件流
-  if (this->file_.is_open()) {
-    this->file_.close();
   }
 }
 
 Pager::~Pager() noexcept {
+  // 持久化到硬盘上
+  persist();
+  // 关闭文件流
+  if (this->file_.is_open()) {
+    this->file_.close();
+  }
   // 清空申请的堆内存
   for (auto& page : this->pages_) {
     if (page) {
-      delete page;
+      delete reinterpret_cast<structure::LeafNode*>(page);
       page = nullptr;
     }
   }
@@ -83,73 +96,64 @@ memory::Byte* Pager::getPage(::uint32_t index) {
   // 把内存看成是磁盘的缓存
   // 没有在内存中找到，就从磁盘中找
   if (this->pages_[index] == nullptr) {
-    this->pages_[index] = new Byte[kPageSize];
-
+    this->pages_[index] = reinterpret_cast<Byte*>(new structure::LeafNode());
+    
     // 这个页面在磁盘中
     // 如果这个条件不满足，说明添加了新的条目，磁盘中的文件也得更新了
     if (index < this->totalPage_) {
       this->file_.seekg(index * kPageSize, std::ios::beg);
       this->file_.read(this->pages_[index], kPageSize);
+
+      // read没有读满会使failbit置位
+      // 后面对文件的操作统统无效
+      // 但是我们现在操作的基本单元就是cell了
+      this->file_.clear();
     } else {
       // 这个页面连磁盘都没有
       // 增加页数，之后写入磁盘
       ++this->totalPage_;
     }
   }
-  // read没有读满会使failbit置位
-  // 后面对文件的操作统统无效
-  this->file_.clear();
+
   return this->pages_[index];
 }
 
 Table::Table(std::fstream& file) {
-  // index初始值由持久化的文件决定
-  this->rowNum_ = getFileSize(file) / Row::getSize();
-  this->cursor_ = new cursor::Cursor{*this, this->rowNum_ - 1};
   this->pager_ = new Pager{file};
+  this->cursor_ = new Cursor{};
+  this->rootIndex_ = 0;
 }
 
 Table::~Table() noexcept {
-  // Pass remainde byte
-  // 总数为索引 + 1
-  this->cursor_->setEnd();
-  this->pager_->close(this->cursor_->getCurIndex() * Row::getSize() %
-                      kPageSize);
   delete this->pager_;
   delete this->cursor_;
 }
 
-memory::Byte* Table::getInsertAddr() {
-  auto pageIndex = this->cursor_->getCurIndex() / this->kRowCountPerPage;
-  auto rowOffset = this->cursor_->getCurIndex() % this->kRowCountPerPage;
-  auto* page = this->pager_->getPage(pageIndex);
-  memory::Byte* insertAddr = page + rowOffset * memory::Row::getSize();
+template<>
+void Table::insert(const structure::Cell& cell) {
+  auto* page = this->pager_->getPage(this->cursor_->getPageIndex());
+  auto node = reinterpret_cast<structure::LeafNode*>(page);
 
-  return insertAddr;
-}
-
-void Table::insert(const Row& row) {
-  this->cursor_->setEnd();
-  ++this->rowNum_;
-  auto* insertAddr = this->getInsertAddr();
-  saveToMem(row, insertAddr);
+  // auto* insertAddr = this->getInsertAddr();
+  auto* insertAddr = reinterpret_cast<Byte*>(&node->leafNodeBody_)
+    + node->leafNodeHeader_.cellsCount_ * sizeof(cell);
+  ++node->leafNodeHeader_.cellsCount_;
+  saveToMemory(insertAddr, cell);
+  this->cursor_->advance();
 }
 
 std::ostream& memory::operator<<(std::ostream& os, const memory::Table& table) {
-  table.cursor_->setBegin();
+  auto* page = table.pager_->getPage(table.cursor_->getPageIndex());
+  auto node = reinterpret_cast<structure::LeafNode*>(page);
 
-  while (!table.cursor_->isEnd()) {
-    auto index = table.cursor_->getCurIndex();
-    auto pageIndex = index / table.kRowCountPerPage;
-    auto rowOffset = index % table.kRowCountPerPage;
-    auto* addr = table.pager_->getPage(pageIndex) + rowOffset * Row::getSize();
-
-    auto row = loadFromMem(addr);
-    os << "( " << row.id << ", " << row.name << ", " << row.email << " )"
-       << std::endl;
-
-    table.cursor_->advance();
+  for (int i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
+    std::cout << node->leafNodeBody_.cells[i].value_ << std::endl;
   }
 
+  return os;
+}
+
+std::ostream& memory::operator<<(std::ostream& os, const memory::Row& row) {
+  os << "( " << row.id << ", " << row.name << ", " << row.email << " )";
   return os;
 }

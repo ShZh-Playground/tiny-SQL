@@ -8,7 +8,7 @@
 #include <string_view>
 #include <tuple>
 
-#include "memory.h"
+#include "btree.h"
 
 namespace compiler {
 
@@ -24,6 +24,8 @@ class CmdInput {
 
  public:
   CmdInput(std::string_view input) : input_(input) {}
+
+  virtual ~CmdInput() {}
 
   std::string_view getInput() const { return this->input_; }
 
@@ -70,10 +72,10 @@ class Interpreter {
   friend class CompilerFactory;
 
  private:
-  void visit(std::unique_ptr<CmdInput>&& cmdInput) const;
+  void visit(std::unique_ptr<CmdInput> cmdInput) const;
 
  public:
-  void execute(std::unique_ptr<CmdInput>&& cmdInput) {
+  void execute(std::unique_ptr<CmdInput> cmdInput) {
     this->visit(std::move(cmdInput));
   }
 
