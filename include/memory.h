@@ -4,6 +4,7 @@
 #include "btree.h"
 #include "memory.h"
 
+#include <cstring>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
