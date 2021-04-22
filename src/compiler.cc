@@ -50,7 +50,7 @@ bool compiler::Interpreter::visitMetaCommand(
   if (".exit" == metaCommand->getInput()) {
     delete table;
     std::cout << "Bye" << std::endl;
-    exit(0);
+    exit(Error::kNoError);
   } else {
     std::cerr << "Error: unrecognized meta command, " << requireCheck
               << std::endl;

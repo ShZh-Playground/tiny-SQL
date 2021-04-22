@@ -13,5 +13,7 @@ using Addr = char*;
 
 // Error defination
 enum Error {
+  kNoError = 0,
 
+  kWrongFileSize = 1000,
 };

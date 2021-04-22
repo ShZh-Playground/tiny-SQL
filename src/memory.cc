@@ -49,7 +49,7 @@ Pager::Pager(std::fstream& file) : file_(file) {
   this->fileSize_ = getFileSize(file_);
   if (this->fileSize_ % kPageSize != 0) {
     std::cerr << "Error: Wrong file size! Incomplete page apper!" << std::endl;
-    exit(-1);
+    exit(Error::kWrongFileSize);
   }
 
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;
@@ -81,7 +81,7 @@ Pager::~Pager() noexcept {
   }
 }
 
-memory::Byte* Pager::getPage(u32 index) {
+Addr Pager::getPage(u32 index) {
   if (index >= kMaxPageNum) {
     std::cerr << "Error: page index out of bound!" << std::endl;
     exit(-1);
@@ -89,7 +89,7 @@ memory::Byte* Pager::getPage(u32 index) {
   // 把内存看成是磁盘的缓存
   // 没有在内存中找到，就从磁盘中找
   if (this->pages_[index] == nullptr) {
-    this->pages_[index] = reinterpret_cast<Byte*>(new structure::LeafNode());
+    this->pages_[index] = reinterpret_cast<Addr>(new structure::LeafNode());
     
     // 这个页面在磁盘中
     // 如果这个条件不满足，说明添加了新的条目，磁盘中的文件也得更新了
@@ -128,7 +128,7 @@ void Table::insert(const structure::Cell& cell) {
   auto node = reinterpret_cast<structure::LeafNode*>(page);
 
   // auto* insertAddr = this->getInsertAddr();
-  auto* insertAddr = reinterpret_cast<Byte*>(&node->leafNodeBody_)
+  auto* insertAddr = reinterpret_cast<Addr>(&node->leafNodeBody_)
     + node->leafNodeHeader_.cellsCount_ * sizeof(cell);
   ++node->leafNodeHeader_.cellsCount_;
   saveToMemory(insertAddr, cell);

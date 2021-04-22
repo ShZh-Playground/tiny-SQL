@@ -1,5 +1,4 @@
-#ifndef BTREE_H__
-#define BTREE_H__
+#pragma once
 
 #include "def.h"
 #include "memory.h"
@@ -67,5 +66,3 @@ struct alignas(memory::kPageSize) LeafNode {
 // };
 
 }   // namespace structure ends
-
-#endif  // BTREE_H__ ends

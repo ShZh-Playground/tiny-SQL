@@ -12,9 +12,7 @@
 #include <memory>
 
 namespace memory {
-
-using Byte = char;
-
+  
 // 和大多数操作系统分页的大小一样，4096B
 constexpr u32 kPageSize        = 4096;
 constexpr u32 kMaxPageNum      = 50;
@@ -74,7 +72,7 @@ class Cursor {
 
 class Pager {
  private:
-  Byte* pages_[kMaxPageNum];
+  Addr pages_[kMaxPageNum];
 
   std::fstream& file_;
 
@@ -89,7 +87,7 @@ class Pager {
 
   ~Pager() noexcept;
 
-  Byte* getPage(u32 index);
+  Addr getPage(u32 index);
 };
 
 class Table {
