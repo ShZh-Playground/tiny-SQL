@@ -16,4 +16,5 @@ enum Error {
   kNoError = 0,
 
   kWrongFileSize = 1000,
+  kDuplicatedKey = 1001
 };

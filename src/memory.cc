@@ -126,12 +126,20 @@ void Table::insert(const structure::Cell& cell) {
     exit(-1);
   }
 
-  auto targetIndex = std::distance(std::lower_bound(
-    node->leafNodeBody_.cells.begin(), 
-    node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
-    cell.key_, 
-    [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
-  ), std::begin(node->leafNodeBody_.cells));
+  // 在std::array中找到合适的插入位置
+  auto targetIndex = std::distance(std::begin(node->leafNodeBody_.cells), 
+    std::lower_bound(
+      node->leafNodeBody_.cells.begin(), 
+      node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
+      cell.key_, 
+      [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
+    )
+  );
+  // 不允许出现相同的key
+  if (node->leafNodeBody_.cells[targetIndex].key_ == cell.key_) {
+    std::cerr << "Duplicated key error!" << std::endl;
+    exit(kDuplicatedKey);
+  }
 
   // 将目标元素后面的元素向后移一个cell的大小
   if (targetIndex < node->leafNodeHeader_.cellsCount_) {
