@@ -66,7 +66,8 @@ bool compiler::Interpreter::visitSelectSql(
 
 bool compiler::Interpreter::visitInsertSql(
     const InsertSql* sqlStatement) const {
-  table->insert(structure::Pair(1U, sqlStatement->getRow()));
+  // 选取id作为主键
+  table->insert(structure::Pair(sqlStatement->getRow().id, sqlStatement->getRow()));
   std::cout << "Insert OK" << std::endl;
   return true;
 }
