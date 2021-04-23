@@ -36,11 +36,9 @@ T loadFromMemory(void* addr) {
 #pragma pack(push)
 #pragma pack(1)
 struct Row {
-  u32 id;
-
-  char name[kNameMaxLength];
-
-  char email[kEmailMaxLength];
+  u32   id;
+  char  name[kNameMaxLength];
+  char  email[kEmailMaxLength];
 
   constexpr static u32 getSize() {
     return sizeof(id) + sizeof(name) + sizeof(email);
@@ -53,7 +51,6 @@ struct Row {
 class Cursor {
  private:
   u32 pageIndex_;
-
   u32 cellIndex_;
 
  public:
@@ -72,13 +69,10 @@ class Cursor {
 
 class Pager {
  private:
-  Addr pages_[kMaxPageNum];
-
+  Addr          pages_[kMaxPageNum];
   std::fstream& file_;
-
-  u32 fileSize_;
-
-  u32 totalPage_;
+  u32           fileSize_;
+  u32           totalPage_;
 
   void persist();
 
@@ -92,14 +86,9 @@ class Pager {
 
 class Table {
  private:
-  // 控制页面（节点）
-  Pager* pager_;
-
-  // 控制节点中的记录
-  Cursor* cursor_;
-
-  // 用根节点来表示是哪一个树
-  u32 rootIndex_;
+  u32     rootIndex_;   // 用根节点来表示是哪一个树
+  Pager*  pager_;       // 控制页面（节点）
+  Cursor* cursor_;      // 控制节点中的记录
 
  public:
   explicit Table(std::fstream& file);
