@@ -111,20 +111,14 @@ Addr Pager::getPage(u32 index) {
   return this->pages_[index];
 }
 
-Table::Table(std::fstream& file) {
-  this->pager_ = new Pager{file};
-  this->cursor_ = new Cursor{};
-  this->rootIndex_ = 0;
-}
-
-Table::~Table() noexcept {
-  delete this->pager_;
-  delete this->cursor_;
-}
+Table::Table(std::fstream& file): 
+  pager_(Pager{file}), 
+  cursor_(Cursor{}), 
+  rootIndex_(0) {}
 
 template<>
 void Table::insert(const structure::Cell& cell) {
-  auto* page = this->pager_->getPage(this->cursor_->getPageIndex());
+  auto* page = this->pager_.getPage(this->cursor_.getPageIndex());
   auto node = reinterpret_cast<structure::LeafNode*>(page);
 
   // auto* insertAddr = this->getInsertAddr();
@@ -132,11 +126,11 @@ void Table::insert(const structure::Cell& cell) {
     + node->leafNodeHeader_.cellsCount_ * sizeof(cell);
   ++node->leafNodeHeader_.cellsCount_;
   saveToMemory(insertAddr, cell);
-  this->cursor_->advance();
+  this->cursor_.advance();
 }
 
-std::ostream& memory::operator<<(std::ostream& os, const memory::Table& table) {
-  auto* page = table.pager_->getPage(table.cursor_->getPageIndex());
+std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
+  auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
   auto node = reinterpret_cast<structure::LeafNode*>(page);
 
   for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {

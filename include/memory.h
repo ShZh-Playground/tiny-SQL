@@ -87,21 +87,19 @@ class Pager {
 class Table {
  private:
   u32     rootIndex_;   // 用根节点来表示是哪一个树
-  Pager*  pager_;       // 控制页面（节点）
-  Cursor* cursor_;      // 控制节点中的记录
+  Pager   pager_;       // 控制页面（节点）
+  Cursor  cursor_;      // 控制节点中的记录
 
  public:
   explicit Table(std::fstream& file);
 
-  ~Table() noexcept;
-
   template<typename Record>
   void insert(const Record&);
 
-  friend std::ostream& operator<<(std::ostream& os, const Table& table);
+  friend std::ostream& operator<<(std::ostream& os, Table& table);
 };
 
-std::ostream& operator<<(std::ostream& os, const Table& table);
+std::ostream& operator<<(std::ostream& os, Table& table);
 
 std::ostream& operator<<(std::ostream& os, const Row& row);
 
