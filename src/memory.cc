@@ -3,8 +3,9 @@
 #include "../include/memory.h"
 
 #include <cstring>
-#include <filesystem>
 #include <fstream>
+#include <algorithm>
+#include <filesystem>
 
 using memory::Cursor;
 using memory::Pager;
@@ -120,13 +121,37 @@ template<>
 void Table::insert(const structure::Cell& cell) {
   auto* page = this->pager_.getPage(this->cursor_.getPageIndex());
   auto node = reinterpret_cast<structure::LeafNode*>(page);
+  if (node->leafNodeHeader_.cellsCount_ == structure::kMaxCells) {
+    std::cerr << "Page Full!!" << std::endl;
+    exit(-1);
+  }
 
-  // auto* insertAddr = this->getInsertAddr();
-  auto* insertAddr = reinterpret_cast<Addr>(&node->leafNodeBody_)
-    + node->leafNodeHeader_.cellsCount_ * sizeof(cell);
-  ++node->leafNodeHeader_.cellsCount_;
+  auto targetIndex = std::distance(std::lower_bound(
+    node->leafNodeBody_.cells.begin(), 
+    node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
+    cell.key_, 
+    [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
+  ), std::begin(node->leafNodeBody_.cells));
+
+  // 将目标元素后面的元素向后移一个cell的大小
+  if (targetIndex < node->leafNodeHeader_.cellsCount_) {
+    // 获取移动的地址
+    Addr srcAddr = reinterpret_cast<Addr>(&node->leafNodeBody_) + \
+      targetIndex * sizeof(cell);           // 移动的源地址
+    Addr dstAddr = srcAddr + sizeof(cell);  // 移动的目标地址
+    // 获取移动的大小
+    auto numToMove = node->leafNodeHeader_.cellsCount_ - targetIndex + 1;
+    auto sizeToMove = numToMove * sizeof(cell);
+    // 利用memmove处理重叠的移动
+    ::memmove(dstAddr, srcAddr, sizeToMove);
+  }
+
+  // 插入到目标位置
+  Addr insertAddr = reinterpret_cast<Addr>(&node->leafNodeBody_) + \
+      targetIndex * sizeof(cell);
   saveToMemory(insertAddr, cell);
-  this->cursor_.advance();
+  ++node->leafNodeHeader_.cellsCount_;
+  ++this->cursor_;
 }
 
 std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
