@@ -8,10 +8,10 @@
       "args": [
         "-S.",
         "-Bbuild",
-        "-DCMAKE_BUILD_TYPE=Debug", 
+        "-DCMAKE_BUILD_TYPE=Debug",
         "-G\"MSYS Makefiles\""
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
     },
     {
       "label": "Build",
@@ -22,13 +22,16 @@
         "cmake --build build --config Debug -j2"
       ],
       "problemMatcher": [],
-      "group": "build"
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
     },
     {
       "label": "Run",
       "type": "shell",
-      "command": "./build/tinyDBExe.exe",
-      "args": [] ,
+      "command": "./build/tinyDB.exe",
+      "args": [],
       "problemMatcher": []
     }
   ]
