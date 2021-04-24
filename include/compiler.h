@@ -14,77 +14,51 @@ namespace compiler {
 
 const std::string requireCheck = "please check your input and try again!";
 
-// 前向声明
-class Interpreter;
+template<class... Ts> struct overloaded: Ts... {
+  using Ts::operator()...;
+};
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-// 访问者模式
-class CmdInput {
- protected:
+struct MetaCommand {
   std::string_view input_;
 
- public:
-  CmdInput(std::string_view input) : input_(input) {}
-
-  virtual ~CmdInput() {}
-
-  std::string_view getInput() const { return this->input_; }
-
-  virtual StatusCode accept(const Interpreter* interpreter) const = 0;
+  MetaCommand(std::string_view input): input_(input) {}
 };
 
-class MetaCommand : public CmdInput {
- public:
-  MetaCommand(std::string_view input) : CmdInput(input) {}
-
-  StatusCode accept(const Interpreter* interpreter) const override;
+struct SelectSql {
+  SelectSql(std::string_view input) {}
 };
 
-class SelectSql : public CmdInput {
- public:
-  SelectSql(std::string_view input) : CmdInput(input) {}
+struct InsertSql {
+  memory::Row row;
 
-  StatusCode accept(const Interpreter* interpreter) const override;
-};
-
-class InsertSql : public CmdInput {
- private:
-  memory::Row row{};
-
- public:
-  InsertSql(std::string_view input) : CmdInput(input) {
-    sscanf(input.data(), "insert %d %s %s", &row.id, row.name, row.email);
+  InsertSql(std::string_view input) {
+    sscanf(
+      input.data(), 
+      "insert %d %s %s", 
+      &row.id, row.name, row.email);
   }
-
-  memory::Row getRow() const { return this->row; }
-
-  StatusCode accept(const Interpreter* interpreter) const override;
 };
+
+using InputType = std::variant<
+  MetaCommand, SelectSql, 
+  InsertSql, StatusCode
+>;
 
 // 工厂模式
 class Parser {
   friend class CompilerFactory;
 
  public:
-  static std::variant<std::unique_ptr<compiler::CmdInput>, StatusCode> 
-  parse(std::string_view input);
+  static InputType parse(std::string_view input);
 };
 
+// 访问者模式
 class Interpreter {
   friend class CompilerFactory;
 
- private:
-  StatusCode visit(std::unique_ptr<CmdInput> cmdInput) const;
-
  public:
-  StatusCode execute(std::unique_ptr<CmdInput> cmdInput) {
-    return this->visit(std::move(cmdInput));
-  }
-
-  StatusCode visitMetaCommand(const MetaCommand* metaCommand) const;
-
-  StatusCode visitSelectSql(const SelectSql* sqlStatement) const;
-
-  StatusCode visitInsertSql(const InsertSql* sqlStatement) const;
+  StatusCode execute(InputType& input);
 };
 
 // 单例模式

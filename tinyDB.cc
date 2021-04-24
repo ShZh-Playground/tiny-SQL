@@ -7,13 +7,13 @@
 
 using compiler::CompilerFactory;
 
-void handleStatus(StatusCode statusCode) {
+void handleStatus(StatusCode& statusCode) {
   switch (statusCode) {
     case StatusCode::kSuccess:
       break;
     case StatusCode::kSuccessAndExit:
       std::cout << "Bye~" << std::endl;
-      exit(0);
+      exit(StatusCode::kSuccessAndExit);
       break;
     case StatusCode::kUnrecognizeMetaCommand:
       std::cerr << "Error: unrecognized meta command, " 
@@ -24,6 +24,8 @@ void handleStatus(StatusCode statusCode) {
                 << compiler::requireCheck << std::endl;
       break;
     default:
+      std::cerr << "Fatal Error: Unknown error!" << std::endl;
+      exit(StatusCode::kUnknownError);
       break;
   }
 }
@@ -36,21 +38,9 @@ int main() {
     std::cout << "TinyDB > ";
     std::getline(std::cin, input);
 
-    auto statement = compiler::Parser::parse(input);
-    try {
-      // Handle parse error
-      handleStatus(std::get<StatusCode>(statement));
-    } catch(const std::bad_variant_access&) {
-      // Do interprete
-      auto statusCode = interpreter.execute(
-        std::move(std::get<std::unique_ptr<compiler::CmdInput>>(statement))
-      );
-      // Handle interprete error
-      handleStatus(statusCode);
-    } catch (...) {
-      std::cerr << "Fatal Error: Unknown error!" << std::endl;
-      exit(StatusCode::kUnknownError);
-    }
+    auto statement = parser.parse(input);
+    auto statusCode = interpreter.execute(statement);
+    handleStatus(statusCode);
   }
 
   return 0;
