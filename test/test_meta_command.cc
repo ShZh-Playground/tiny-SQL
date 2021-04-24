@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
  
+#include "test_helper.h"
+#include "../include/def.h"
 #include "../include/compiler.h"
 #include "../include/memory.h"
 
@@ -12,22 +14,21 @@ using compiler::Interpreter;
 auto parser = CompilerFactory::getParser();
 auto interpreter = CompilerFactory::getInterpreter();
 
-// // Disable this test because this function will call exit(0)
-// TEST(CommandTest, TestExit) {
-//   // Redirect iostream to string stream
-//   testing::internal::CaptureStdout();
-//   auto metaCommand = parser.parse(".exit");
-//   interpreter.execute(metaCommand);
-
-//   std::string output = testing::internal::GetCapturedStdout();
-//   ASSERT_STREQ("Bye\n", output.c_str());
-// }
+TEST(CommandTest, TestExit) {
+  // Redirect iostream to string stream
+  testing::internal::CaptureStdout();
+  auto metaCommand = parser.parse(".exit");
+  auto exitStatus = interpreter.execute(metaCommand);
+  ASSERT_EQ(exitStatus, StatusCode::kSuccessAndExit);
+}
 
 TEST(CommandTest, TestIllegal) {
   // Redirect iostream to string stream
   testing::internal::CaptureStderr();
   auto illegalCommand = parser.parse(".HelloWorld");
-  interpreter.execute(std::move(illegalCommand));
+  auto illegalStatus = interpreter.execute(illegalCommand);
+  ASSERT_EQ(illegalStatus, StatusCode::kUnrecognizeMetaCommand);
+  handleStatus(illegalStatus);
 
   std::string output = testing::internal::GetCapturedStderr();
   ASSERT_STREQ("Error: unrecognized meta command, please check your input and try again!\n", output.c_str());
