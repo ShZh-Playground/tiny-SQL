@@ -12,9 +12,15 @@ using Byte = char;
 using Addr = char*;
 
 // Error defination
-enum Error {
-  kNoError = 0,
+enum StatusCode : u32 {
+  kSuccess = 0,
+  kSuccessAndExit = 1,
 
-  kWrongFileSize = 1000,
-  kDuplicatedKey = 1001
+  kUnrecognizeMetaCommand = 100,
+  kUnrecognizeSqlStatement = 101,
+
+  kWrongFileSize = 200,
+  kDuplicatedKey = 201,
+
+  kUnknownError = 900
 };

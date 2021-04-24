@@ -1,13 +1,14 @@
 #pragma once
 
+#include "def.h"
+#include "btree.h"
+
 #include <cstdio>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
-
-#include "btree.h"
 
 namespace compiler {
 
@@ -28,21 +29,21 @@ class CmdInput {
 
   std::string_view getInput() const { return this->input_; }
 
-  virtual bool accept(const Interpreter* interpreter) const = 0;
+  virtual StatusCode accept(const Interpreter* interpreter) const = 0;
 };
 
 class MetaCommand : public CmdInput {
  public:
   MetaCommand(std::string_view input) : CmdInput(input) {}
 
-  bool accept(const Interpreter* interpreter) const override;
+  StatusCode accept(const Interpreter* interpreter) const override;
 };
 
 class SelectSql : public CmdInput {
  public:
   SelectSql(std::string_view input) : CmdInput(input) {}
 
-  bool accept(const Interpreter* interpreter) const override;
+  StatusCode accept(const Interpreter* interpreter) const override;
 };
 
 class InsertSql : public CmdInput {
@@ -56,7 +57,7 @@ class InsertSql : public CmdInput {
 
   memory::Row getRow() const { return this->row; }
 
-  bool accept(const Interpreter* interpreter) const override;
+  StatusCode accept(const Interpreter* interpreter) const override;
 };
 
 // 工厂模式
@@ -64,25 +65,26 @@ class Parser {
   friend class CompilerFactory;
 
  public:
-  static std::unique_ptr<CmdInput> parse(std::string_view input);
+  static std::variant<std::unique_ptr<compiler::CmdInput>, StatusCode> 
+  parse(std::string_view input);
 };
 
 class Interpreter {
   friend class CompilerFactory;
 
  private:
-  void visit(std::unique_ptr<CmdInput> cmdInput) const;
+  StatusCode visit(std::unique_ptr<CmdInput> cmdInput) const;
 
  public:
-  void execute(std::unique_ptr<CmdInput> cmdInput) {
-    this->visit(std::move(cmdInput));
+  StatusCode execute(std::unique_ptr<CmdInput> cmdInput) {
+    return this->visit(std::move(cmdInput));
   }
 
-  bool visitMetaCommand(const MetaCommand* metaCommand) const;
+  StatusCode visitMetaCommand(const MetaCommand* metaCommand) const;
 
-  bool visitSelectSql(const SelectSql* sqlStatement) const;
+  StatusCode visitSelectSql(const SelectSql* sqlStatement) const;
 
-  bool visitInsertSql(const InsertSql* sqlStatement) const;
+  StatusCode visitInsertSql(const InsertSql* sqlStatement) const;
 };
 
 // 单例模式
@@ -92,7 +94,7 @@ class CompilerFactory {
 
   static Parser& getParser();
 
-  static std::tuple<Interpreter, Parser> getAll();
+  static std::tuple<Parser, Interpreter> getAll();
 };
 
 }  // namespace compiler

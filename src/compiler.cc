@@ -6,20 +6,20 @@
 // 全局变量
 extern memory::Table* table;
 
-bool compiler::MetaCommand::accept(const Interpreter* interpreter) const {
+StatusCode compiler::MetaCommand::accept(const Interpreter* interpreter) const {
   return interpreter->visitMetaCommand(this);
 }
 
-bool compiler::SelectSql::accept(const Interpreter* interpreter) const {
+StatusCode compiler::SelectSql::accept(const Interpreter* interpreter) const {
   return interpreter->visitSelectSql(this);
 }
 
-bool compiler::InsertSql::accept(const Interpreter* Interpreter) const {
+StatusCode compiler::InsertSql::accept(const Interpreter* Interpreter) const {
   return Interpreter->visitInsertSql(this);
 }
 
-std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
-    std::string_view input) {
+std::variant<std::unique_ptr<compiler::CmdInput>, StatusCode>
+compiler::Parser::parse(std::string_view input) {
   // 不合法的输入
   if (input.empty()) {
     return nullptr;
@@ -35,41 +35,35 @@ std::unique_ptr<compiler::CmdInput> compiler::Parser::parse(
   if ("insert" == input.substr(0, 6)) {
     return std::make_unique<InsertSql>(input);
   }
-  std::cerr << "Error: unrecognized SQL statement, " << requireCheck
-            << std::endl;
 
-  return nullptr;
+  return StatusCode::kUnrecognizeSqlStatement;
 }
 
-void compiler::Interpreter::visit(std::unique_ptr<CmdInput> cmdInput) const {
-  cmdInput->accept(this);
+StatusCode compiler::Interpreter::visit(std::unique_ptr<CmdInput> cmdInput) const {
+  return cmdInput->accept(this);
 }
 
-bool compiler::Interpreter::visitMetaCommand(
+StatusCode compiler::Interpreter::visitMetaCommand(
     const MetaCommand* metaCommand) const {
   if (".exit" == metaCommand->getInput()) {
     delete table;
-    std::cout << "Bye" << std::endl;
-    exit(Error::kNoError);
-  } else {
-    std::cerr << "Error: unrecognized meta command, " << requireCheck
-              << std::endl;
+    return StatusCode::kSuccessAndExit;
   }
-  return false;
+  return StatusCode::kUnrecognizeMetaCommand;
 }
 
-bool compiler::Interpreter::visitSelectSql(
+StatusCode compiler::Interpreter::visitSelectSql(
     [[maybe_unused]] const SelectSql* sqlStatement) const {
   std::cout << *table;
-  return true;
+  return StatusCode::kSuccess;
 }
 
-bool compiler::Interpreter::visitInsertSql(
+StatusCode compiler::Interpreter::visitInsertSql(
     const InsertSql* sqlStatement) const {
   // 选取id作为主键
   table->insert(structure::Pair(sqlStatement->getRow().id, sqlStatement->getRow()));
   std::cout << "Insert OK" << std::endl;
-  return true;
+  return StatusCode::kSuccess;
 }
 
 compiler::Interpreter& compiler::CompilerFactory::getInterpreter() {
@@ -82,7 +76,7 @@ compiler::Parser& compiler::CompilerFactory::getParser() {
   return parser;
 }
 
-std::tuple<compiler::Interpreter, compiler::Parser>
+std::tuple<compiler::Parser, compiler::Interpreter>
 compiler::CompilerFactory::getAll() {
-  return std::make_tuple(getInterpreter(), getParser());
+  return std::make_tuple(getParser(), getInterpreter());
 }

@@ -49,8 +49,8 @@ Cursor Cursor::operator++([[maybe_unused]] int n) {
 Pager::Pager(std::fstream& file) : file_(file) {
   this->fileSize_ = getFileSize(file_);
   if (this->fileSize_ % kPageSize != 0) {
-    std::cerr << "Error: Wrong file size! Incomplete page apper!" << std::endl;
-    exit(Error::kWrongFileSize);
+    std::cerr << "Fatal Error: Wrong file size! Incomplete page apper!" << std::endl;
+    exit(StatusCode::kWrongFileSize);
   }
 
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;

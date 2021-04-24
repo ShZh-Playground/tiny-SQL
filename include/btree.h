@@ -15,17 +15,17 @@ namespace structure {
 #pragma pack(1)
 
 // Memory is strictly aligned compared to std::pair
-template<typename T1, typename T2>
+template<typename T, typename U>
 struct Pair {
-  T1 key_;
-  T2 value_;
+  T key_;
+  U value_;
 
   Pair() = default;
-  Pair(T1 key, T2 value): key_(key), value_(value) {}
+  Pair(T key, U value): key_(key), value_(value) {}
 };
 
-template<typename T1, typename T2>
-Pair(T1, T2) -> Pair<T1, T2>;
+template<typename T, typename U>
+Pair(T, U) -> Pair<T, U>;
 
 enum NodeType : u8 {
   kNodeInternal,
@@ -42,14 +42,27 @@ struct LeafNodeHeader {
   u32 cellsCount_;
 };
 
-constexpr u32 kMaxCells =  \
-  (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader))
-  / sizeof(Pair<u32, memory::Row>);
+struct InternalNodeHeader {
+  u32 childCount_;
+  Addr rightestChild_;
+};
 
 using Cell = Pair<u32, memory::Row>;
 
+using Child = Pair<u32, Addr>;
+
+constexpr u32 kMaxCells =  \
+  (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
+
+constexpr u32 kMaxChild = \
+  (memory::kPageSize - sizeof(NodeHeader) - sizeof(InternalNodeHeader)) / sizeof(Child);
+
 struct LeafNodeBody {
   std::array<Cell, kMaxCells> cells;
+};
+
+struct InternalNodeBody {
+  std::array<Child, kMaxChild> childs;
 };
 
 struct alignas(memory::kPageSize) LeafNode {
@@ -58,11 +71,23 @@ struct alignas(memory::kPageSize) LeafNode {
   LeafNodeBody    leafNodeBody_;
 };
 
+struct alignas(memory::kPageSize) InternalNode {
+  NodeHeader          nodeHeader_;
+  InternalNodeHeader  internalNodeHeader_;
+  InternalNodeBody    internalNodeBody_;
+};
+
 #pragma pack(pop)
 
-// template<typename T>
+// template<typename Node, u32 kMaxNodes>
 // class BTree {
+//  private:
+//   std::array<Node, kMaxNodes> nodes;
 
+//  public:
+//   void split() {
+    
+//   }
 // };
 
 }   // namespace structure ends
