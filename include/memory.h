@@ -84,13 +84,11 @@ class Pager {
   Addr getPage(u32 index);
 };
 
-class Table {
- private:
+struct Table {
   u32     rootIndex_;   // 用根节点来表示是哪一个树
   Pager   pager_;       // 控制页面（节点）
   Cursor  cursor_;      // 控制节点中的记录
 
- public:
   explicit Table(std::fstream& file);
 
   template<typename Record>
