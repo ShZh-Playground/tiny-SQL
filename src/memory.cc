@@ -120,7 +120,9 @@ Table::Table(std::fstream& file):
 
 template<>
 void Table::insert(const structure::Cell& cell) {
-    btree.insert_leaf_node(*this, cell.key_, cell.value_);
+  auto cursor = btree.find_key(*this, cell.key_);
+
+  btree.insert_leaf_node(*this, cursor, cell.key_, cell.value_);
 
   ++this->cursor_;
 }

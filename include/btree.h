@@ -95,8 +95,8 @@ struct alignas(memory::kPageSize) InternalNode {
 
 class BTree {
  public:
-  StatusCode insert_leaf_node(memory::Table& table, u32 key, memory::Row row) {
-    auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
+  StatusCode insert_leaf_node(memory::Table& table, memory::Cursor& cursor, u32 key, memory::Row row) {
+    auto* page = table.pager_.getPage(cursor.getPageIndex());
     auto* node = reinterpret_cast<LeafNode*>(page);
 
     if (node->leafNodeHeader_.cellsCount_ >= kMaxCells) {
@@ -105,7 +105,7 @@ class BTree {
     }
     // Page里面的各个cell依然是一个数组。
     // 插入的时候把相应位置后面的元素都往后移一位
-    u32 insert_index = table.cursor_.getCellIndex();
+    u32 insert_index = cursor.getCellIndex();
     for (u32 index = kMaxCells - 1; index > insert_index; --index) {
         ::memcpy(&node->leafNodeBody_.cells[index], &node->leafNodeBody_.cells[index - 1], sizeof(Cell));
     }
@@ -114,6 +114,42 @@ class BTree {
     node->leafNodeBody_.cells[insert_index] = Pair(key, row);
 
     return StatusCode::kSuccess;
+  }
+
+  memory::Cursor find_key(memory::Table& table, u32 key) {
+      auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
+      auto* node = reinterpret_cast<LeafNode*>(page);
+
+      auto page_index = table.rootIndex_;
+
+      if (node->nodeHeader_.nodeType_ == NodeType::kNodeLeaf) {
+          auto cursor = find_key_in_leaf_node(node, page_index, key);
+          // 若内存中已经有相应的数据，而且key还相同，就判定重复
+          if (node->leafNodeBody_.cells[cursor.getCellIndex()].key_ == key) {
+            std::cerr << "Duplicated key error!" << std::endl;
+            exit(static_cast<int>(StatusCode::kDuplicatedKey));
+          }
+
+          return cursor;
+      } else {
+          std::cerr << "Unimplemented branch!" << std::endl;
+          ::exit(static_cast<int>(StatusCode::kUnknownError));
+      }
+  }
+
+ private:
+  memory::Cursor find_key_in_leaf_node(LeafNode* node, u32 page_index, u32 key) {
+    // 在std::array中找到合适的插入位置
+    auto target_index = std::distance(std::begin(node->leafNodeBody_.cells),
+                                     std::lower_bound(
+                                         node->leafNodeBody_.cells.begin(),
+                                         node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
+                                         key,
+                                         [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
+                                     )
+    );
+
+    return memory::Cursor(page_index, target_index);
   }
 };
 

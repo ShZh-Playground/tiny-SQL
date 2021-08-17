@@ -54,6 +54,10 @@ class Cursor {
   u32 cellIndex_;
 
  public:
+  Cursor() = default;
+  Cursor(u32 pageIndex, u32 cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
+  ~Cursor() = default;
+
   [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
 
   [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
