@@ -44,3 +44,9 @@ _deps
 3rd
 bin
 *.db
+
+# User-specific
+.idea
+
+# CMake
+cmake-build-*/
