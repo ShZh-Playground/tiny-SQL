@@ -50,7 +50,7 @@ Pager::Pager(std::fstream& file) : file_(file) {
   this->fileSize_ = getFileSize(file_);
   if (this->fileSize_ % kPageSize != 0) {
     std::cerr << "Fatal Error: Wrong file size! Incomplete page apper!" << std::endl;
-    exit(StatusCode::kWrongFileSize);
+    ::exit(static_cast<int>(StatusCode::kWrongFileSize));
   }
 
   this->totalPage_ = (this->fileSize_ + kPageSize - 1) / kPageSize;
@@ -90,7 +90,7 @@ Addr Pager::getPage(u32 index) {
   // 把内存看成是磁盘的缓存
   // 没有在内存中找到，就从磁盘中找
   if (this->pages_[index] == nullptr) {
-    this->pages_[index] = reinterpret_cast<Addr>(new structure::LeafNode());
+    this->pages_[index] = reinterpret_cast<Addr>(new structure::LeafNode((u8)NULL));
     
     // 这个页面在磁盘中
     // 如果这个条件不满足，说明添加了新的条目，磁盘中的文件也得更新了
@@ -138,7 +138,7 @@ void Table::insert(const structure::Cell& cell) {
   // 不允许出现相同的key
   if (node->leafNodeBody_.cells[targetIndex].key_ == cell.key_) {
     std::cerr << "Duplicated key error!" << std::endl;
-    exit(kDuplicatedKey);
+    exit(static_cast<int>(StatusCode::kDuplicatedKey));
   }
 
   // 将目标元素后面的元素向后移一个cell的大小

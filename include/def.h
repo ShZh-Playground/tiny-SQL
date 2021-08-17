@@ -12,7 +12,7 @@ using Byte = char;
 using Addr = char*;
 
 // Error defination
-enum StatusCode : u32 {
+enum class StatusCode : u32 {
   kSuccess = 0,
   kSuccessAndExit = 1,
 
@@ -21,6 +21,8 @@ enum StatusCode : u32 {
 
   kWrongFileSize = 200,
   kDuplicatedKey = 201,
+
+  kInsertError = 300,
 
   kUnknownError = 900
 };
