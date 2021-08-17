@@ -27,7 +27,7 @@ struct Pair {
 template<typename T, typename U>
 Pair(T, U) -> Pair<T, U>;
 
-enum NodeType : u8 {
+enum class NodeType : u8 {
   kNodeInternal,
   kNodeLeaf,
 };
@@ -69,6 +69,20 @@ struct alignas(memory::kPageSize) LeafNode {
   NodeHeader      nodeHeader_;
   LeafNodeHeader  leafNodeHeader_;
   LeafNodeBody    leafNodeBody_;
+
+  LeafNode(u32 parent_pointer) {
+    this->nodeHeader_ = NodeHeader {
+      .nodeType_ = NodeType::kNodeLeaf,
+      .isRoot_ = false,
+      .parentPointer_ = parent_pointer,
+    };
+    this->leafNodeHeader_ = LeafNodeHeader {
+        .cellsCount_ = 0,
+    };
+    this->leafNodeBody_ = LeafNodeBody {
+        .cells = std::array<Cell, kMaxCells>()
+    };
+  }
 };
 
 struct alignas(memory::kPageSize) InternalNode {
@@ -79,15 +93,28 @@ struct alignas(memory::kPageSize) InternalNode {
 
 #pragma pack(pop)
 
-// template<typename Node, u32 kMaxNodes>
-// class BTree {
-//  private:
-//   std::array<Node, kMaxNodes> nodes;
+class BTree {
+ public:
+  StatusCode insert_leaf_node(memory::Table& table, u32 key, memory::Row row) {
+    auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
+    auto* node = reinterpret_cast<LeafNode*>(page);
 
-//  public:
-//   void split() {
-    
-//   }
-// };
+    if (node->leafNodeHeader_.cellsCount_ >= kMaxCells) {
+      std::cerr << "Cannot insert into a full node! Split operation is required!" << std::endl;
+      return StatusCode::kInsertError;
+    }
+    // Page里面的各个cell依然是一个数组。
+    // 插入的时候把相应位置后面的元素都往后移一位
+    u32 insert_index = table.cursor_.getCellIndex();
+    for (u32 index = kMaxCells - 1; index > insert_index; --index) {
+        ::memcpy(&node->leafNodeBody_.cells[index], &node->leafNodeBody_.cells[index - 1], sizeof(Cell));
+    }
+
+    ++node->leafNodeHeader_.cellsCount_;
+    node->leafNodeBody_.cells[insert_index] = Pair(key, row);
+
+    return StatusCode::kSuccess;
+  }
+};
 
 }   // namespace structure ends

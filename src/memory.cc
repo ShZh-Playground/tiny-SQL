@@ -19,6 +19,7 @@ auto file =
         ? std::fstream{filename, std::ios::in | std::ios::out}
         : std::fstream{filename, std::ios::in | std::ios::out | std::ios::app};
 Table* table = new Table(file);
+structure::BTree btree = structure::BTree();
 
 static u32 memory::getFileSize(std::fstream& file) {
   u32 size = file.seekg(0, std::ios::end).tellg();
@@ -119,52 +120,14 @@ Table::Table(std::fstream& file):
 
 template<>
 void Table::insert(const structure::Cell& cell) {
-  auto* page = this->pager_.getPage(this->cursor_.getPageIndex());
-  auto node = reinterpret_cast<structure::LeafNode*>(page);
-  if (node->leafNodeHeader_.cellsCount_ == structure::kMaxCells) {
-    std::cerr << "Page Full!!" << std::endl;
-    exit(-1);
-  }
+    btree.insert_leaf_node(*this, cell.key_, cell.value_);
 
-  // 在std::array中找到合适的插入位置
-  auto targetIndex = std::distance(std::begin(node->leafNodeBody_.cells), 
-    std::lower_bound(
-      node->leafNodeBody_.cells.begin(), 
-      node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
-      cell.key_, 
-      [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
-    )
-  );
-  // 不允许出现相同的key
-  if (node->leafNodeBody_.cells[targetIndex].key_ == cell.key_) {
-    std::cerr << "Duplicated key error!" << std::endl;
-    exit(static_cast<int>(StatusCode::kDuplicatedKey));
-  }
-
-  // 将目标元素后面的元素向后移一个cell的大小
-  if (targetIndex < node->leafNodeHeader_.cellsCount_) {
-    // 获取移动的地址
-    Addr srcAddr = reinterpret_cast<Addr>(&node->leafNodeBody_) + \
-      targetIndex * sizeof(cell);           // 移动的源地址
-    Addr dstAddr = srcAddr + sizeof(cell);  // 移动的目标地址
-    // 获取移动的大小
-    auto numToMove = node->leafNodeHeader_.cellsCount_ - targetIndex + 1;
-    auto sizeToMove = numToMove * sizeof(cell);
-    // 利用memmove处理重叠的移动
-    ::memmove(dstAddr, srcAddr, sizeToMove);
-  }
-
-  // 插入到目标位置
-  Addr insertAddr = reinterpret_cast<Addr>(&node->leafNodeBody_) + \
-      targetIndex * sizeof(cell);
-  saveToMemory(insertAddr, cell);
-  ++node->leafNodeHeader_.cellsCount_;
   ++this->cursor_;
 }
 
 std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
   auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
-  auto node = reinterpret_cast<structure::LeafNode*>(page);
+  auto* node = reinterpret_cast<structure::LeafNode*>(page);
 
   for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
     std::cout << node->leafNodeBody_.cells[i].value_ << std::endl;
