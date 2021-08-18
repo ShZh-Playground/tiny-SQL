@@ -1,6 +1,6 @@
 #include "../include/compiler.h"
+#include "../include/btree.h"
 
-#include <cstdlib>
 #include <string_view>
 
 // 全局变量
@@ -33,6 +33,11 @@ StatusCode compiler::Interpreter::execute(InputType& input) {
       if (".exit" == command.input_) {
         delete table;
         return StatusCode::kSuccessAndExit;
+      }
+      if (".btree" == command.input_) {
+        Addr rootAddr =  table->pager_.getPage(table->rootIndex_);
+        structure::print_btree(*table, rootAddr, 0);
+        return StatusCode::kSuccess;
       }
       return StatusCode::kUnrecognizeMetaCommand; 
     },
