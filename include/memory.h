@@ -88,7 +88,7 @@ class Pager {
 
   Addr getPage(u32 index);
 
-  Addr get_unused_page();
+  u32 get_unused_page();
 };
 
 struct Table {

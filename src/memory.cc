@@ -110,17 +110,19 @@ Addr Pager::getPage(u32 index) {
 
   return this->pages_[index];
 }
-Addr memory::Pager::get_unused_page() {
-  // 找到一个未分配的page，分配内存并返回
-  // 如果没有找到未分配的（即，所有page均已分配），则返回nullptr
-  for (auto& page : this->pages_) {
+
+u32 memory::Pager::get_unused_page() {
+  // 找到一个未分配的page，分配内存并返回page_num
+  // 如果没有找到未分配的（即，所有page均已分配），则返回full page error
+  for (int page_index = 0; page_index < kMaxPageNum; ++page_index) {
+    auto& page = this->pages_[page_index];
     if (!page) {
-      page = reinterpret_cast<Addr>(new structure::LeafNode((u8)NULL));
-      return page;
+      page = reinterpret_cast<Addr>(new structure::LeafNode(static_cast<u8>(NULL)));
+      return page_index;
     }
   }
-
-  return nullptr;
+  std::cerr << "Page full error!" << std::endl;
+  ::exit(static_cast<int>(StatusCode::kPageFullError));
 }
 
 Table::Table(std::fstream& file): 

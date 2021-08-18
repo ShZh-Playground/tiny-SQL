@@ -10,6 +10,12 @@ using u32 = ::uint32_t;
 using usize = ::uint32_t;
 using u64 = ::uint64_t;
 
+using i8 = ::int8_t;
+using i16 = ::int16_t;
+using i32 = ::int32_t;
+using isize = ::int32_t;
+using i64 = ::int64_t;
+
 using Byte = char;
 using Addr = char*;
 
@@ -25,6 +31,7 @@ enum class StatusCode : u32 {
   kDuplicatedKey = 201,
 
   kInsertError = 300,
+  kPageFullError = 301,
 
-  kUnknownError = 900
+  kUnknownError = 900,
 };

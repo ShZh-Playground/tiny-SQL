@@ -35,8 +35,7 @@ StatusCode compiler::Interpreter::execute(InputType& input) {
         return StatusCode::kSuccessAndExit;
       }
       if (".btree" == command.input_) {
-        Addr rootAddr =  table->pager_.getPage(table->rootIndex_);
-        structure::print_btree(*table, rootAddr, 0);
+        structure::print_btree(*table, table->rootIndex_, 0);
         return StatusCode::kSuccess;
       }
       return StatusCode::kUnrecognizeMetaCommand; 

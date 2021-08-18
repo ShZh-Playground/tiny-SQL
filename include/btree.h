@@ -48,7 +48,8 @@ struct InternalNodeHeader {
 
 using Cell = Pair<u32, memory::Row>;
 
-using Child = Pair<u32, Addr>;
+// key和page num对
+using Child = Pair<u32, u32>;
 
 constexpr u32 kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
@@ -66,7 +67,7 @@ struct LeafNodeBody {
 
 struct InternalNodeBody {
   std::array<Child, kMaxChild> childs;
-  Addr rightestChild_;
+  u32 rightestChild_;
 };
 
 struct alignas(memory::kPageSize) LeafNode {
@@ -103,6 +104,8 @@ struct alignas(memory::kPageSize) InternalNode {
 
 #pragma pack(pop)
 
+NodeType get_node_type(Addr raw_address);
+
 class BTree {
  public:
   StatusCode insert_leaf_node(memory::Table& table, memory::Cursor& cursor, u32 key, memory::Row row) {
@@ -126,23 +129,34 @@ class BTree {
   }
 
   memory::Cursor find_key(memory::Table& table, u32 key) {
-      auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
-      auto* node = reinterpret_cast<LeafNode*>(page);
-
+      // 查找插入位置的时候，是从根结点开始查找
       auto page_index = table.rootIndex_;
+      auto* page = table.pager_.getPage(table.rootIndex_);
 
-      if (node->nodeHeader_.nodeType_ == NodeType::kNodeLeaf) {
+      auto node_type = get_node_type(page);
+      if (node_type == NodeType::kNodeLeaf) {
+          auto* node = reinterpret_cast<LeafNode*>(page);
           auto cursor = find_key_in_leaf_node(node, page_index, key);
-          // 若内存中已经有相应的数据，而且key还相同，就判定重复
-          if (node->leafNodeBody_.cells[cursor.getCellIndex()].key_ == key) {
-            std::cerr << "Duplicated key error!" << std::endl;
-            exit(static_cast<int>(StatusCode::kDuplicatedKey));
-          }
 
           return cursor;
-      } else {
-          std::cerr << "Unimplemented branch!" << std::endl;
-          ::exit(static_cast<int>(StatusCode::kUnknownError));
+      } else if (node_type == NodeType::kNodeInternal) {
+        // 找到internal node中对应的key
+        auto* node = reinterpret_cast<InternalNode*>(page);
+        auto cursor = find_key_in_internal_node(node, page_index, key);
+        // 根据key-value对获取相应的地址
+        auto child_page_index = node->internalNodeBody_.childs[cursor.getCellIndex()].value_;
+
+        auto* page = table.pager_.getPage(child_page_index);
+        auto node_type = get_node_type(page);
+        if (node_type == NodeType::kNodeLeaf) {
+          auto* node = reinterpret_cast<LeafNode*>(page);
+          return find_key_in_leaf_node(node, child_page_index, key);
+        } else if (node_type == NodeType::kNodeInternal) {
+          auto* node = reinterpret_cast<InternalNode*>(page);
+          return find_key_in_internal_node(node, child_page_index, key);
+        }
+
+        return cursor;
       }
   }
 
@@ -157,13 +171,34 @@ class BTree {
 
   memory::Cursor find_key_in_leaf_node(LeafNode* node, u32 page_index, u32 key) {
     // 在std::array中找到合适的插入位置
-    auto target_index = std::distance(std::begin(node->leafNodeBody_.cells),
-                                     std::lower_bound(
-                                         node->leafNodeBody_.cells.begin(),
-                                         node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
-                                         key,
-                                         [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
-                                     )
+    auto target_index = std::distance(
+        std::begin(node->leafNodeBody_.cells),
+        std::lower_bound(
+            node->leafNodeBody_.cells.begin(),
+            node->leafNodeBody_.cells.begin() + node->leafNodeHeader_.cellsCount_,
+            key,
+            [](const structure::Cell& cell, u32 key) { return cell.key_ < key; }
+        )
+    );
+
+    // 若内存中已经有相应的数据，而且key还相同，就判定重复
+    if (node->leafNodeBody_.cells[target_index].key_ == key) {
+      std::cerr << "Duplicated key error!" << std::endl;
+      exit(static_cast<int>(StatusCode::kDuplicatedKey));
+    }
+
+    return memory::Cursor(page_index, target_index);
+  }
+
+  memory::Cursor find_key_in_internal_node(InternalNode* node, u32 page_index, u32 key) {
+    auto target_index = std::distance(
+        std::begin(node->internalNodeBody_.childs),
+          std::lower_bound(
+            node->internalNodeBody_.childs.begin(),
+            node->internalNodeBody_.childs.begin() + node->internalNodeHeader_.key_nums_,
+            key,
+            [](const structure::Child& child, u32 key) { return child.key_ < key; }
+        )
     );
 
     return memory::Cursor(page_index, target_index);
@@ -172,7 +207,8 @@ class BTree {
   StatusCode split_leaf_node_and_insert(memory::Table& table, memory::Cursor& cursor, u32 key, memory::Row row) {
     // 获取新旧两个node
     auto* old_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(cursor.getPageIndex()));
-    auto* new_node = reinterpret_cast<LeafNode*>(table.pager_.get_unused_page());
+    u32 new_page_index = table.pager_.get_unused_page();
+    auto* new_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(new_page_index));
 
     // Mac下command + ctrl + g修改同一个局部变量名
     for (u32 index = 0; index <= old_node->leafNodeHeader_.cellsCount_; ++index) {
@@ -202,7 +238,7 @@ class BTree {
     // 确定parentPointer
     // TODO: 把root的信息编码到结构体之中
     if (cursor.getPageIndex() == 0) {
-      return create_new_root(table, new_node);
+      return create_new_root(table, new_page_index);
     } else {
       std::cerr << "Unimplemented branch!" << std::endl;
       ::exit(-1);
@@ -213,10 +249,11 @@ class BTree {
 
   // 把原来根结点的内容拷贝到一个新的左节点中
   // 然后把这个根结点重新初始化为内部节点
-  StatusCode create_new_root(memory::Table& table, LeafNode* right_node) {
+  StatusCode create_new_root(memory::Table& table, u32 right_node_page_index) {
     // 拷贝到新的左节点中
     auto* root_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(table.rootIndex_));
-    auto* left_node = reinterpret_cast<LeafNode*>(table.pager_.get_unused_page());
+    auto left_node_page_index = table.pager_.get_unused_page();
+    auto* left_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(left_node_page_index));
     ::memcpy(left_node, root_node, sizeof(LeafNode));
     left_node->nodeHeader_.isRoot_ = false;
 
@@ -225,8 +262,8 @@ class BTree {
     root_as_internal->nodeHeader_.nodeType_ = NodeType::kNodeInternal;
     root_as_internal->internalNodeHeader_.key_nums_ = 1;
     root_as_internal->internalNodeBody_.childs[0].key_ = left_node->get_max_key();
-    root_as_internal->internalNodeBody_.childs[0].value_ = reinterpret_cast<Addr>(left_node);
-    root_as_internal->internalNodeBody_.rightestChild_ = reinterpret_cast<Addr>(right_node);
+    root_as_internal->internalNodeBody_.childs[0].value_ = left_node_page_index;
+    root_as_internal->internalNodeBody_.rightestChild_ = right_node_page_index;
 
     return StatusCode::kSuccess;
   }
@@ -234,6 +271,6 @@ class BTree {
 
 void indent(u32 level);
 
-void print_btree(memory::Table& table, Addr address, u32 indent_level);
+void print_btree(memory::Table& table, u32 page_index, u32 indent_level);
 
 }   // namespace structure ends
