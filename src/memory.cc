@@ -1,9 +1,6 @@
 #include "../include/def.h"
 #include "../include/btree.h"
-#include "../include/memory.h"
 
-#include <cstring>
-#include <fstream>
 #include <algorithm>
 #include <filesystem>
 
@@ -31,8 +28,9 @@ void Cursor::advance() {
   if (this->cellIndex_ < structure::kMaxCells) {
     ++this->cellIndex_;
   } else {
-    std::cerr << "Full page!" << std::endl;
-    exit(-1);
+    // TODO: 其实这里应该赋值之前btree分裂出来的page_num
+    ++this->pageIndex_;
+    this->cellIndex_ = 0;
   }
 }
 
@@ -111,6 +109,18 @@ Addr Pager::getPage(u32 index) {
   }
 
   return this->pages_[index];
+}
+Addr memory::Pager::get_unused_page() {
+  // 找到一个未分配的page，分配内存并返回
+  // 如果没有找到未分配的（即，所有page均已分配），则返回nullptr
+  for (auto& page : this->pages_) {
+    if (!page) {
+      page = reinterpret_cast<Addr>(new structure::LeafNode((u8)NULL));
+      return page;
+    }
+  }
+
+  return nullptr;
 }
 
 Table::Table(std::fstream& file): 

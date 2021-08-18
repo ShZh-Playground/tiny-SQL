@@ -16,8 +16,9 @@ namespace memory {
 // 和大多数操作系统分页的大小一样，4096B
 constexpr u32 kPageSize        = 4096;
 constexpr u32 kMaxPageNum      = 50;
-constexpr u32 kNameMaxLength   = 20;
-constexpr u32 kEmailMaxLength  = 50;
+// 让每一页的数据尽可能少，来测试我们的btree
+constexpr u32 kNameMaxLength   = 240;
+constexpr u32 kEmailMaxLength  = 600;
 
 static u32 getFileSize(std::fstream& file);
 
@@ -86,6 +87,8 @@ class Pager {
   ~Pager() noexcept;
 
   Addr getPage(u32 index);
+
+  Addr get_unused_page();
 };
 
 struct Table {
