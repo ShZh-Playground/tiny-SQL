@@ -27,6 +27,11 @@ struct Pair {
 template<typename T, typename U>
 Pair(T, U) -> Pair<T, U>;
 
+struct PageInfo {
+  u32 page_index;
+  u32 next_page_index;
+};
+
 enum class NodeType : u8 {
   kNodeLeaf,
   kNodeInternal,
@@ -48,8 +53,8 @@ struct InternalNodeHeader {
 
 using Cell = Pair<u32, memory::Row>;
 
-// key和page num对
-using Child = Pair<u32, u32>;
+// key和page_num，next_page_num对
+using Child = Pair<u32, PageInfo>;
 
 constexpr u32 kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
@@ -144,7 +149,7 @@ class BTree {
         auto* node = reinterpret_cast<InternalNode*>(page);
         auto cursor = find_key_in_internal_node(node, page_index, key);
         // 根据key-value对获取相应的地址
-        auto child_page_index = node->internalNodeBody_.childs[cursor.getCellIndex()].value_;
+        auto child_page_index = node->internalNodeBody_.childs[cursor.getCellIndex()].value_.page_index;
 
         auto* page = table.pager_.getPage(child_page_index);
         auto node_type = get_node_type(page);
@@ -236,7 +241,6 @@ class BTree {
     new_node->leafNodeHeader_.cellsCount_ = kSplitRightCount;
 
     // 确定parentPointer
-    // TODO: 把root的信息编码到结构体之中
     if (cursor.getPageIndex() == 0) {
       return create_new_root(table, new_page_index);
     } else {
@@ -262,7 +266,8 @@ class BTree {
     root_as_internal->nodeHeader_.nodeType_ = NodeType::kNodeInternal;
     root_as_internal->internalNodeHeader_.key_nums_ = 1;
     root_as_internal->internalNodeBody_.childs[0].key_ = left_node->get_max_key();
-    root_as_internal->internalNodeBody_.childs[0].value_ = left_node_page_index;
+    root_as_internal->internalNodeBody_.childs[0].value_.page_index = left_node_page_index;
+    root_as_internal->internalNodeBody_.childs[0].value_.next_page_index = right_node_page_index;
     root_as_internal->internalNodeBody_.rightestChild_ = right_node_page_index;
 
     return StatusCode::kSuccess;
