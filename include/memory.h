@@ -53,8 +53,8 @@ class Pager {
  private:
   Addr          pages_[kMaxPageNum];
   std::fstream& file_;
-  u32           fileSize_;
-  u32           totalPage_;
+  usize           fileSize_;
+  usize           totalPage_;
 
   void persist();
 
@@ -63,13 +63,14 @@ class Pager {
 
   ~Pager() noexcept;
 
-  Addr getPage(u32 index);
+  Addr getPage(usize index);
 
-  u32 get_unused_page();
+  // 返回的是未被使用的页面的索引
+  usize get_unused_page();
 };
 
 struct Table {
-  u32     rootIndex_;   // 用根节点来表示是哪一个树
+  usize     rootIndex_;   // 用根节点来表示是哪一个树
   Pager   pager_;       // 控制页面（节点）
 
   explicit Table(std::fstream& file);
@@ -87,17 +88,17 @@ std::ostream& operator<<(std::ostream& os, const Row& row);
 class Cursor {
  private:
   Table* table;
-  u32 pageIndex_;
-  u32 cellIndex_;
+  usize pageIndex_;
+  usize cellIndex_;
 
  public:
   Cursor() = default;
-  Cursor(u32 pageIndex, u32 cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
+  Cursor(usize pageIndex, usize cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
   ~Cursor() = default;
 
-  [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
+  [[nodiscard]] usize getPageIndex() const { return this->pageIndex_; }
 
-  [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
+  [[nodiscard]] usize getCellIndex() const { return this->cellIndex_; }
 
   void advance();
 

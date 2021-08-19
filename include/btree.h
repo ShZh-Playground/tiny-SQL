@@ -28,8 +28,8 @@ template<typename T, typename U>
 Pair(T, U) -> Pair<T, U>;
 
 struct PageInfo {
-  u32 page_index;
-  u32 next_page_index;
+  usize page_index;
+  usize next_page_index;
 };
 
 enum class NodeType : u8 {
@@ -40,15 +40,15 @@ enum class NodeType : u8 {
 struct NodeHeader {
   NodeType  nodeType_;
   u8        isRoot_;
-  u32       parentPointer_;
+  usize       parentPointer_;
 };
 
 struct LeafNodeHeader {
-  u32 cellsCount_;
+  usize cellsCount_;
 };
 
 struct InternalNodeHeader {
-  u32 key_nums_;
+  usize key_nums_;
 };
 
 using Cell = Pair<u32, memory::Row>;
@@ -56,14 +56,14 @@ using Cell = Pair<u32, memory::Row>;
 // key和page_num，next_page_num对
 using Child = Pair<u32, PageInfo>;
 
-constexpr u32 kMaxCells =  \
+constexpr usize kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
 
-constexpr u32 kSplitRightCount = (1 + kMaxCells) / 2;
+constexpr usize kSplitRightCount = (1 + kMaxCells) / 2;
 
-constexpr u32 kSplitLeftCount = (1 + kMaxCells) - kSplitRightCount;
+constexpr usize kSplitLeftCount = (1 + kMaxCells) - kSplitRightCount;
 
-constexpr u32 kMaxChild = \
+constexpr usize kMaxChild = \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(InternalNodeHeader)) / sizeof(Child);
 
 struct LeafNodeBody {
@@ -72,7 +72,7 @@ struct LeafNodeBody {
 
 struct InternalNodeBody {
   std::array<Child, kMaxChild> childs;
-  u32 rightestChild_;
+  usize rightestChild_;
 };
 
 struct alignas(memory::kPageSize) LeafNode {
@@ -80,7 +80,7 @@ struct alignas(memory::kPageSize) LeafNode {
   LeafNodeHeader  leafNodeHeader_;
   LeafNodeBody    leafNodeBody_;
 
-  LeafNode(u32 parent_pointer) {
+  LeafNode(usize parent_pointer) {
     this->nodeHeader_ = NodeHeader {
       .nodeType_ = NodeType::kNodeLeaf,
       .isRoot_ = false,
@@ -94,9 +94,9 @@ struct alignas(memory::kPageSize) LeafNode {
     };
   }
 
-  u32 get_max_key() {
-    u32 max_index = this->leafNodeHeader_.cellsCount_ - 1;
-    u32 max_key = this->leafNodeBody_.cells[max_index].key_;
+  usize get_max_key() {
+    usize max_index = this->leafNodeHeader_.cellsCount_ - 1;
+    usize max_key = this->leafNodeBody_.cells[max_index].key_;
     return max_key;
   }
 };
@@ -166,7 +166,7 @@ class BTree {
   }
 
  private:
-  Cell* get_destination_address(u32 index, LeafNode* old_node, LeafNode* new_node) {
+  Cell* get_destination_address(usize index, LeafNode* old_node, LeafNode* new_node) {
     auto* destination_node = index < kSplitLeftCount? old_node : new_node;
     u32 new_index = index % kSplitLeftCount;
     auto* destination = &destination_node->leafNodeBody_.cells[new_index];
@@ -174,7 +174,7 @@ class BTree {
     return destination;
   }
 
-  memory::Cursor find_key_in_leaf_node(LeafNode* node, u32 page_index, u32 key) {
+  memory::Cursor find_key_in_leaf_node(LeafNode* node, usize page_index, u32 key) {
     // 在std::array中找到合适的插入位置
     auto target_index = std::distance(
         std::begin(node->leafNodeBody_.cells),
@@ -195,7 +195,7 @@ class BTree {
     return memory::Cursor(page_index, target_index);
   }
 
-  memory::Cursor find_key_in_internal_node(InternalNode* node, u32 page_index, u32 key) {
+  memory::Cursor find_key_in_internal_node(InternalNode* node, usize page_index, u32 key) {
     auto target_index = std::distance(
         std::begin(node->internalNodeBody_.childs),
           std::lower_bound(
@@ -212,11 +212,11 @@ class BTree {
   StatusCode split_leaf_node_and_insert(memory::Table& table, memory::Cursor& cursor, u32 key, memory::Row row) {
     // 获取新旧两个node
     auto* old_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(cursor.getPageIndex()));
-    u32 new_page_index = table.pager_.get_unused_page();
+    usize new_page_index = table.pager_.get_unused_page();
     auto* new_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(new_page_index));
 
     // Mac下command + ctrl + g修改同一个局部变量名
-    for (u32 index = 0; index <= old_node->leafNodeHeader_.cellsCount_; ++index) {
+    for (usize index = 0; index <= old_node->leafNodeHeader_.cellsCount_; ++index) {
       // 确定每个数据的新地址
       auto* destination = get_destination_address(index, old_node, new_node);
 
@@ -253,7 +253,7 @@ class BTree {
 
   // 把原来根结点的内容拷贝到一个新的左节点中
   // 然后把这个根结点重新初始化为内部节点
-  StatusCode create_new_root(memory::Table& table, u32 right_node_page_index) {
+  StatusCode create_new_root(memory::Table& table, usize right_node_page_index) {
     // 拷贝到新的左节点中
     auto* root_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(table.rootIndex_));
     auto left_node_page_index = table.pager_.get_unused_page();
@@ -276,6 +276,6 @@ class BTree {
 
 void indent(u32 level);
 
-void print_btree(memory::Table& table, u32 page_index, u32 indent_level);
+void print_btree(memory::Table& table, usize page_index, u32 indent_level);
 
 }   // namespace structure ends

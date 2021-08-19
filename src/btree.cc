@@ -13,7 +13,7 @@ void structure::indent(u32 level) {
   }
 }
 
-void structure::print_btree(memory::Table& table, u32 page_index, u32 indent_level) {
+void structure::print_btree(memory::Table& table, usize page_index, u32 indent_level) {
   auto* page = table.pager_.getPage(page_index);
   auto node_type = get_node_type(page);
   if (node_type == NodeType::kNodeLeaf) {
