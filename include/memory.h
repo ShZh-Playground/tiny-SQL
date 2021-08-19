@@ -1,49 +1,33 @@
 #pragma once
 
-#include "def.h"
-#include "btree.h"
-#include "memory.h"
-
-#include <cstring>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
 
+#include "btree.h"
+#include "def.h"
+#include "memory.h"
+
 namespace memory {
-  
+
 // 和大多数操作系统分页的大小一样，4096B
-constexpr u32 kPageSize        = 4096;
-constexpr u32 kMaxPageNum      = 50;
+constexpr u32 kPageSize = 4096;
+constexpr u32 kMaxPageNum = 50;
 // 让每一页的数据尽可能少，来测试我们的btree
-constexpr u32 kNameMaxLength   = 240;
-constexpr u32 kEmailMaxLength  = 600;
+constexpr u32 kNameMaxLength = 240;
+constexpr u32 kEmailMaxLength = 600;
 
-static u32 getFileSize(std::fstream& file);
-
-template<typename T>
-void saveToMemory(void* addr, T obj) {
-  ::memcpy(addr, std::addressof(obj), sizeof(T));
-}
-
-template<typename T>
-T loadFromMemory(void* addr) {
-  T ret {};
-  ::memcpy(std::addressof(ret), addr, sizeof(T));
-  return ret;
-}
+u32 static GetFileSize(std::fstream& file);
 
 #pragma pack(push)
 #pragma pack(1)
 struct Row {
-  u32   id;
-  char  name[kNameMaxLength];
-  char  email[kEmailMaxLength];
-
-  constexpr static u32 getSize() {
-    return sizeof(id) + sizeof(name) + sizeof(email);
-  }
+  u32 id;
+  char name[kNameMaxLength];
+  char email[kEmailMaxLength];
 
   friend std::ostream& operator<<(std::ostream& os, const Row& row);
 };
@@ -51,36 +35,36 @@ struct Row {
 
 class Pager {
  private:
-  Addr          pages_[kMaxPageNum];
-  std::fstream& file_;
-  usize           fileSize_;
-  usize           totalPage_;
+  Addr pages[kMaxPageNum];
+  std::fstream& file;
+  usize file_size;
+  usize total_page;
 
-  void persist();
+  void Persist();
 
  public:
   explicit Pager(std::fstream& file);
 
   ~Pager() noexcept;
 
-  Addr getPage(usize index);
+  Addr GetPage(usize index);
 
   // 返回的是未被使用的页面的索引
-  usize get_unused_page();
+  usize GetUnusedPage();
 };
 
 class Cursor;
 
 struct Table {
-  usize     rootIndex_;   // 用根节点来表示是哪一个树
-  Pager   pager_;       // 控制页面（节点）
+  usize root_index;  // 用根节点来表示是哪一个树
+  Pager pager;      // 控制页面（节点）
 
   explicit Table(std::fstream& file);
 
-  template<typename Record>
+  template <typename Record>
   void insert(const Record&);
 
-  Cursor get_start();
+  Cursor GetStart();
 
   friend std::ostream& operator<<(std::ostream& os, Table& table);
 };
@@ -89,30 +73,24 @@ std::ostream& operator<<(std::ostream& os, Table& table);
 
 std::ostream& operator<<(std::ostream& os, const Row& row);
 
-class Cursor {
- private:
+struct Cursor {
   Table* table;
-  usize pageIndex_;
-  usize cellIndex_;
+  usize page_index;
+  usize cell_index;
 
   // 遍历叶子结点用
   // 如果叶子节点cell的总数为0，说明end_of_table了
   bool end_of_table;
 
- public:
   Cursor() = default;
-  Cursor(Table* table,  usize pageIndex, usize cellIndex, bool end_of_table)
-      : table(table), pageIndex_(pageIndex), cellIndex_(cellIndex), end_of_table(end_of_table) {}
-
+  Cursor(Table* table, usize page_index, usize cell_index, bool end_of_table)
+      : table(table),
+        page_index(page_index),
+        cell_index(cell_index),
+        end_of_table(end_of_table) {}
   ~Cursor() = default;
 
-  [[nodiscard]] usize getPageIndex() const { return this->pageIndex_; }
-
-  [[nodiscard]] usize getCellIndex() const { return this->cellIndex_; }
-
-  [[nodiscard]] bool is_at_end() const { return this->end_of_table; }
-
-  void advance();
+  void Advance();
 
   // 前置++
   Cursor operator++();

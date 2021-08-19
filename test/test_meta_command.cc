@@ -1,37 +1,30 @@
 #include <gtest/gtest.h>
-#include <iostream>
+
 #include <string>
- 
+
 #include "test_helper.h"
-#include "../include/def.h"
-#include "../include/compiler.h"
-#include "../include/memory.h"
-
-using compiler::CompilerFactory;
-using compiler::Parser;
-using compiler::Interpreter;
-
-auto parser = CompilerFactory::getParser();
-auto interpreter = CompilerFactory::getInterpreter();
 
 TEST(CommandTest, TestExit) {
   // Redirect iostream to string stream
   testing::internal::CaptureStdout();
-  auto metaCommand = parser.parse(".exit");
-  auto exitStatus = interpreter.execute(metaCommand);
-  ASSERT_EQ(exitStatus, StatusCode::kSuccessAndExit);
+  auto meta_command = compiler::Parser::Parse(".exit");
+  auto exit_status = compiler::Interpreter::Execute(meta_command);
+  ASSERT_EQ(exit_status, StatusCode::kSuccessAndExit);
 }
 
 TEST(CommandTest, TestIllegal) {
   // Redirect iostream to string stream
   testing::internal::CaptureStderr();
-  auto illegalCommand = parser.parse(".HelloWorld");
-  auto illegalStatus = interpreter.execute(illegalCommand);
-  ASSERT_EQ(illegalStatus, StatusCode::kUnrecognizeMetaCommand);
-  handleStatus(illegalStatus);
+  auto illegal_command = compiler::Parser::Parse(".HelloWorld");
+  auto illegal_status = compiler::Interpreter::Execute(illegal_command);
+  ASSERT_EQ(illegal_status, StatusCode::kUnrecognizedMetaCommand);
+  handle_status(illegal_status);
 
   std::string output = testing::internal::GetCapturedStderr();
-  ASSERT_STREQ("Error: unrecognized meta command, please check your input and try again!\n", output.c_str());
+  ASSERT_STREQ(
+      "Error: unrecognized meta command, please check your input and try "
+      "again!\n",
+      output.c_str());
 }
 
 int main() {

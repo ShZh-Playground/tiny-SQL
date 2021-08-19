@@ -19,13 +19,13 @@ using i64 = ::int64_t;
 using Byte = char;
 using Addr = char*;
 
-// Error defination
+// Error definition
 enum class StatusCode : u32 {
   kSuccess = 0,
   kSuccessAndExit = 1,
 
-  kUnrecognizeMetaCommand = 100,
-  kUnrecognizeSqlStatement = 101,
+  kUnrecognizedMetaCommand = 100,
+  kUnrecognizedSqlStatement = 101,
 
   kWrongFileSize = 200,
   kDuplicatedKey = 201,

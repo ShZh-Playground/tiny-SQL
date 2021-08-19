@@ -10,7 +10,7 @@ using compiler::MetaCommand;
 using compiler::SelectSql;
 using compiler::InsertSql;
 
-InputType compiler::Parser::parse(std::string_view input) {
+InputType compiler::Parser::Parse(std::string_view input) {
   // 以.起始的都不是sql语句，而是内置的命令
   if ('.' == input[0]) {
     return MetaCommand(input);
@@ -23,21 +23,21 @@ InputType compiler::Parser::parse(std::string_view input) {
     return InsertSql(input);
   }
 
-  return StatusCode::kUnrecognizeSqlStatement;
+  return StatusCode::kUnrecognizedSqlStatement;
 }
 
-StatusCode compiler::Interpreter::execute(InputType& input) {
+StatusCode compiler::Interpreter::Execute(InputType& input) {
   return std::visit(compiler::overloaded {
     [] (MetaCommand& command) {
-      if (".exit" == command.input_) {
+      if (".exit" == command.input) {
         delete table;
         return StatusCode::kSuccessAndExit;
       }
-      if (".btree" == command.input_) {
-        structure::print_btree(*table, table->rootIndex_, 0);
+      if (".btree" == command.input) {
+        structure::PrintBtree(*table, table->root_index, 0);
         return StatusCode::kSuccess;
       }
-      return StatusCode::kUnrecognizeMetaCommand; 
+      return StatusCode::kUnrecognizedMetaCommand;
     },
     [] ([[maybe_unused]] SelectSql& sql) {
       std::cout << *table;
@@ -53,17 +53,17 @@ StatusCode compiler::Interpreter::execute(InputType& input) {
   }, input);
 }
 
-compiler::Interpreter& compiler::CompilerFactory::getInterpreter() {
+compiler::Interpreter& compiler::CompilerFactory::GetInterpreter() {
   static compiler::Interpreter interpreter;
   return interpreter;
 }
 
-compiler::Parser& compiler::CompilerFactory::getParser() {
+compiler::Parser& compiler::CompilerFactory::GetParser() {
   static compiler::Parser parser;
   return parser;
 }
 
 std::tuple<compiler::Parser, compiler::Interpreter>
-compiler::CompilerFactory::getAll() {
-  return std::make_tuple(getParser(), getInterpreter());
+compiler::CompilerFactory::GetAll() {
+  return std::make_tuple(GetParser(), GetInterpreter());
 }   

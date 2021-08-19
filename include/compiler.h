@@ -20,13 +20,13 @@ template<class... Ts> struct overloaded: Ts... {
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 struct MetaCommand {
-  std::string_view input_;
+  std::string_view input;
 
-  MetaCommand(std::string_view input): input_(input) {}
+  MetaCommand(std::string_view input): input(input) {}
 };
 
 struct SelectSql {
-  SelectSql(std::string_view input) {}
+  SelectSql([[maybe_unused]] std::string_view input) {}
 };
 
 struct InsertSql {
@@ -50,7 +50,7 @@ class Parser {
   friend class CompilerFactory;
 
  public:
-  static InputType parse(std::string_view input);
+  static InputType Parse(std::string_view input);
 };
 
 // 访问者模式
@@ -58,17 +58,17 @@ class Interpreter {
   friend class CompilerFactory;
 
  public:
-  StatusCode execute(InputType& input);
+  static StatusCode Execute(InputType& input);
 };
 
 // 单例模式
 class CompilerFactory {
  public:
-  static Interpreter& getInterpreter();
+  static Interpreter& GetInterpreter();
 
-  static Parser& getParser();
+  static Parser& GetParser();
 
-  static std::tuple<Parser, Interpreter> getAll();
+  static std::tuple<Parser, Interpreter> GetAll();
 };
 
 }  // namespace compiler

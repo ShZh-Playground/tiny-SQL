@@ -52,7 +52,7 @@ Checks: >
   -readability-named-parameter,
   -readability-redundant-declaration
 # Turn all the warnings from the checks above into errors.
-WarningsAsErrors: ""
+WarningsAsErrors: "*"
 
 HeaderFilterRegex: "(google/cloud/|generator/).*\\.h$"
 
@@ -62,8 +62,8 @@ CheckOptions:
   - { key: readability-identifier-naming.StructCase,             value: CamelCase  }
   - { key: readability-identifier-naming.TemplateParameterCase,  value: CamelCase  }
   - { key: readability-identifier-naming.FunctionCase,           value: aNy_CasE  }
-  - { key: readability-identifier-naming.VariableCase,           value: camelBack }
-  - { key: readability-identifier-naming.ClassMemberCase,        value: camelBack }
+  - { key: readability-identifier-naming.VariableCase,           value: lower_case }
+  - { key: readability-identifier-naming.ClassMemberCase,        value: lower_case }
   - { key: readability-identifier-naming.ClassMemberSuffix,      value: _          }
   - { key: readability-identifier-naming.PrivateMemberSuffix,    value: _          }
   - { key: readability-identifier-naming.ProtectedMemberSuffix,  value: _          }

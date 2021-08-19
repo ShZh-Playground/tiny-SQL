@@ -7,7 +7,7 @@
 
 using compiler::CompilerFactory;
 
-void handleStatus(StatusCode& statusCode) {
+void handle_status(StatusCode& statusCode) {
   switch (statusCode) {
     case StatusCode::kSuccess:
       break;
@@ -15,11 +15,11 @@ void handleStatus(StatusCode& statusCode) {
       std::cout << "Bye~" << std::endl;
       exit(static_cast<int>(StatusCode::kSuccessAndExit));
       break;
-    case StatusCode::kUnrecognizeMetaCommand:
+    case StatusCode::kUnrecognizedMetaCommand:
       std::cerr << "Error: unrecognized meta command, " 
                 << compiler::requireCheck << std::endl;
       break;
-    case StatusCode::kUnrecognizeSqlStatement:
+    case StatusCode::kUnrecognizedSqlStatement:
       std::cerr << "Error: unrecognized SQL statement, " 
                 << compiler::requireCheck << std::endl;
       break;
@@ -31,16 +31,16 @@ void handleStatus(StatusCode& statusCode) {
 }
 
 int main() {
-  auto [parser, interpreter] = CompilerFactory::getAll();
+  auto [parser, interpreter] = CompilerFactory::GetAll();
 
   while (true) {
     std::string input;
     std::cout << "TinyDB > ";
     std::getline(std::cin, input);
 
-    auto statement = parser.parse(input);
-    auto statusCode = interpreter.execute(statement);
-    handleStatus(statusCode);
+    auto statement = parser.Parse(input);
+    auto statusCode = interpreter.Execute(statement);
+    handle_status(statusCode);
   }
 
   return 0;
