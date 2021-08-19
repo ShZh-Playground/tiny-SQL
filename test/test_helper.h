@@ -11,7 +11,7 @@ void handleStatus(StatusCode& statusCode) {
       break;
     case StatusCode::kSuccessAndExit:
       std::cout << "Bye~" << std::endl;
-      exit(StatusCode::kSuccessAndExit);
+      ::exit(static_cast<u8>(StatusCode::kSuccessAndExit));
       break;
     case StatusCode::kUnrecognizeMetaCommand:
       std::cerr << "Error: unrecognized meta command, " 
@@ -23,7 +23,7 @@ void handleStatus(StatusCode& statusCode) {
       break;
     default:
       std::cerr << "Fatal Error: Unknown error!" << std::endl;
-      exit(StatusCode::kUnknownError);
+      ::exit(static_cast<u8>(StatusCode::kUnknownError));
       break;
   }
 }
