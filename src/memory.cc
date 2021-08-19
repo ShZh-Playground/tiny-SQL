@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory.h>
+
 
 using memory::Cursor;
 using memory::Pager;
@@ -137,7 +139,8 @@ void Table::insert(const structure::Cell& cell) {
 }
 
 std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
-  auto* page = table.pager_.getPage(table.rootIndex_);
+  auto most_left_leaf_node = table.get_start();
+  auto* page = table.pager_.getPage(most_left_leaf_node.getPageIndex());
   auto* node = reinterpret_cast<structure::LeafNode*>(page);
 
   for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
@@ -145,6 +148,10 @@ std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
   }
 
   return os;
+}
+Cursor memory::Table::get_start() {
+  // 找到最左边的叶子节点，返回对应的curosr
+  return btree.find_key(*this, 0);
 }
 
 std::ostream& memory::operator<<(std::ostream& os, const memory::Row& row) {

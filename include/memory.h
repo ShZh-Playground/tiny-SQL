@@ -69,6 +69,8 @@ class Pager {
   usize get_unused_page();
 };
 
+class Cursor;
+
 struct Table {
   usize     rootIndex_;   // 用根节点来表示是哪一个树
   Pager   pager_;       // 控制页面（节点）
@@ -77,6 +79,8 @@ struct Table {
 
   template<typename Record>
   void insert(const Record&);
+
+  Cursor get_start();
 
   friend std::ostream& operator<<(std::ostream& os, Table& table);
 };
