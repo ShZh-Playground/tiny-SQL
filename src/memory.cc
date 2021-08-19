@@ -128,6 +128,7 @@ u32 memory::Pager::get_unused_page() {
   for (int page_index = 0; page_index < kMaxPageNum; ++page_index) {
     auto& page = this->pages_[page_index];
     if (!page) {
+      ++this->totalPage_;
       page = reinterpret_cast<Addr>(new structure::LeafNode(static_cast<u8>(NULL)));
       return page_index;
     }
