@@ -40,11 +40,12 @@ enum class NodeType : u8 {
 struct NodeHeader {
   NodeType  nodeType_;
   u8        isRoot_;
-  usize       parentPointer_;
+  usize     parentPointer_;
 };
 
 struct LeafNodeHeader {
   usize cellsCount_;
+  usize next_page_index;
 };
 
 struct InternalNodeHeader {
@@ -88,6 +89,7 @@ struct alignas(memory::kPageSize) LeafNode {
     };
     this->leafNodeHeader_ = LeafNodeHeader {
         .cellsCount_ = 0,
+        .next_page_index = 0,   // 0代表没有next page
     };
     this->leafNodeBody_ = LeafNodeBody {
         .cells = std::array<Cell, kMaxCells>()
@@ -141,13 +143,13 @@ class BTree {
       auto node_type = get_node_type(page);
       if (node_type == NodeType::kNodeLeaf) {
           auto* node = reinterpret_cast<LeafNode*>(page);
-          auto cursor = find_key_in_leaf_node(node, page_index, key);
+          auto cursor = find_key_in_leaf_node(&table, node, page_index, key);
 
           return cursor;
       } else if (node_type == NodeType::kNodeInternal) {
         // 找到internal node中对应的key
         auto* node = reinterpret_cast<InternalNode*>(page);
-        auto cursor = find_key_in_internal_node(node, page_index, key);
+        auto cursor = find_key_in_internal_node(&table, node, page_index, key);
         // 根据key-value对获取相应的地址
         auto child_page_index = node->internalNodeBody_.childs[cursor.getCellIndex()].value_.page_index;
 
@@ -155,10 +157,10 @@ class BTree {
         auto node_type = get_node_type(page);
         if (node_type == NodeType::kNodeLeaf) {
           auto* node = reinterpret_cast<LeafNode*>(page);
-          return find_key_in_leaf_node(node, child_page_index, key);
+          return find_key_in_leaf_node(&table, node, child_page_index, key);
         } else if (node_type == NodeType::kNodeInternal) {
           auto* node = reinterpret_cast<InternalNode*>(page);
-          return find_key_in_internal_node(node, child_page_index, key);
+          return find_key_in_internal_node(&table, node, child_page_index, key);
         }
 
         return cursor;
@@ -174,7 +176,7 @@ class BTree {
     return destination;
   }
 
-  memory::Cursor find_key_in_leaf_node(LeafNode* node, usize page_index, u32 key) {
+  memory::Cursor find_key_in_leaf_node(memory::Table* table, LeafNode* node, usize page_index, u32 key) {
     // 在std::array中找到合适的插入位置
     auto target_index = std::distance(
         std::begin(node->leafNodeBody_.cells),
@@ -186,16 +188,13 @@ class BTree {
         )
     );
 
-    // 若内存中已经有相应的数据，而且key还相同，就判定重复
-    if (node->leafNodeBody_.cells[target_index].key_ == key) {
-      std::cerr << "Duplicated key error!" << std::endl;
-      exit(static_cast<int>(StatusCode::kDuplicatedKey));
-    }
+    // 叶子节点，且节点总数=0，说明end of table了
+    bool is_at_end = node->leafNodeHeader_.cellsCount_ == 0;
 
-    return memory::Cursor(page_index, target_index);
+    return memory::Cursor(table, page_index, target_index, is_at_end);
   }
 
-  memory::Cursor find_key_in_internal_node(InternalNode* node, usize page_index, u32 key) {
+  memory::Cursor find_key_in_internal_node(memory::Table* table, InternalNode* node, usize page_index, u32 key) {
     auto target_index = std::distance(
         std::begin(node->internalNodeBody_.childs),
           std::lower_bound(
@@ -205,8 +204,8 @@ class BTree {
             [](const structure::Child& child, u32 key) { return child.key_ < key; }
         )
     );
-
-    return memory::Cursor(page_index, target_index);
+    // 注意internal node不可能是end of table
+    return memory::Cursor(table, page_index, target_index, false);
   }
 
   StatusCode split_leaf_node_and_insert(memory::Table& table, memory::Cursor& cursor, u32 key, memory::Row row) {
@@ -237,6 +236,7 @@ class BTree {
 
     // 给每个节点填充一下基本的属性
     old_node->leafNodeHeader_.cellsCount_ = kSplitLeftCount;
+    old_node->leafNodeHeader_.next_page_index = new_page_index;
     new_node->nodeHeader_.nodeType_ = NodeType::kNodeLeaf;
     new_node->leafNodeHeader_.cellsCount_ = kSplitRightCount;
 
@@ -260,6 +260,7 @@ class BTree {
     auto* left_node = reinterpret_cast<LeafNode*>(table.pager_.getPage(left_node_page_index));
     ::memcpy(left_node, root_node, sizeof(LeafNode));
     left_node->nodeHeader_.isRoot_ = false;
+    left_node->leafNodeHeader_.next_page_index = right_node_page_index;
 
     // 创建内部节点
     auto* root_as_internal = reinterpret_cast<InternalNode*>(root_node);

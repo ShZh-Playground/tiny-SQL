@@ -26,13 +26,22 @@ static u32 memory::getFileSize(std::fstream& file) {
   return size;
 }
 
+// 在leaf node上advance
 void Cursor::advance() {
-  if (this->cellIndex_ < structure::kMaxCells) {
+  auto* page = this->table->pager_.getPage(this->pageIndex_);
+  auto* node = reinterpret_cast<structure::LeafNode*>(page);
+
+  if (this->cellIndex_ < node->leafNodeHeader_.cellsCount_) {
     ++this->cellIndex_;
-  } else {
-    // TODO: 其实这里应该赋值之前btree分裂出来的page_num
-    ++this->pageIndex_;
-    this->cellIndex_ = 0;
+  }
+
+  if (this->cellIndex_ == node->leafNodeHeader_.cellsCount_) {
+    if (node->leafNodeHeader_.next_page_index == 0) {
+      this->end_of_table = true;
+    } else {
+      this->pageIndex_ = node->leafNodeHeader_.next_page_index;
+      this->cellIndex_ = 0;
+    }
   }
 }
 
@@ -135,16 +144,31 @@ template<>
 void Table::insert(const structure::Cell& cell) {
   auto cursor = btree.find_key(*this, cell.key_);
 
+  usize page_index = cursor.getPageIndex();
+  auto* page = this->pager_.getPage(page_index);
+  auto* node = reinterpret_cast<structure::LeafNode*>(page);
+  usize cell_index = cursor.getCellIndex();
+  auto target_insert_pos_key = node->leafNodeBody_.cells[cell_index].key_;
+  if (target_insert_pos_key == cell.key_) {
+    std::cerr << "Duplicated key error!" << std::endl;
+    exit(static_cast<int>(StatusCode::kDuplicatedKey));
+  }
+
   btree.insert_leaf_node(*this, cursor, cell.key_, cell.value_);
 }
 
 std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
-  auto most_left_leaf_node = table.get_start();
-  auto* page = table.pager_.getPage(most_left_leaf_node.getPageIndex());
-  auto* node = reinterpret_cast<structure::LeafNode*>(page);
+  auto leaf_node_cursor = table.get_start();
 
-  for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
-    std::cout << node->leafNodeBody_.cells[i].value_ << std::endl;
+  while (!leaf_node_cursor.is_at_end()) {
+    usize page_index = leaf_node_cursor.getPageIndex();
+    auto* page = table.pager_.getPage(page_index);
+    auto* leaf_node = reinterpret_cast<structure::LeafNode*>(page);
+
+    usize cell_index = leaf_node_cursor.getCellIndex();
+    std::cout << leaf_node->leafNodeBody_.cells[cell_index].value_ << std::endl;
+
+    ++leaf_node_cursor;
   }
 
   return os;

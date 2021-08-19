@@ -95,14 +95,22 @@ class Cursor {
   usize pageIndex_;
   usize cellIndex_;
 
+  // 遍历叶子结点用
+  // 如果叶子节点cell的总数为0，说明end_of_table了
+  bool end_of_table;
+
  public:
   Cursor() = default;
-  Cursor(usize pageIndex, usize cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
+  Cursor(Table* table,  usize pageIndex, usize cellIndex, bool end_of_table)
+      : table(table), pageIndex_(pageIndex), cellIndex_(cellIndex), end_of_table(end_of_table) {}
+
   ~Cursor() = default;
 
   [[nodiscard]] usize getPageIndex() const { return this->pageIndex_; }
 
   [[nodiscard]] usize getCellIndex() const { return this->cellIndex_; }
+
+  [[nodiscard]] bool is_at_end() const { return this->end_of_table; }
 
   void advance();
 
