@@ -49,29 +49,6 @@ struct Row {
 };
 #pragma pack(pop)
 
-class Cursor {
- private:
-  u32 pageIndex_;
-  u32 cellIndex_;
-
- public:
-  Cursor() = default;
-  Cursor(u32 pageIndex, u32 cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
-  ~Cursor() = default;
-
-  [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
-
-  [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
-
-  void advance();
-
-  // 前置++
-  Cursor operator++();
-
-  // 后置++
-  Cursor operator++(int);
-};
-
 class Pager {
  private:
   Addr          pages_[kMaxPageNum];
@@ -94,7 +71,6 @@ class Pager {
 struct Table {
   u32     rootIndex_;   // 用根节点来表示是哪一个树
   Pager   pager_;       // 控制页面（节点）
-  Cursor  cursor_;      // 控制节点中的记录
 
   explicit Table(std::fstream& file);
 
@@ -107,5 +83,29 @@ struct Table {
 std::ostream& operator<<(std::ostream& os, Table& table);
 
 std::ostream& operator<<(std::ostream& os, const Row& row);
+
+class Cursor {
+ private:
+  Table* table;
+  u32 pageIndex_;
+  u32 cellIndex_;
+
+ public:
+  Cursor() = default;
+  Cursor(u32 pageIndex, u32 cellIndex): pageIndex_(pageIndex), cellIndex_(cellIndex) {}
+  ~Cursor() = default;
+
+  [[nodiscard]] auto getPageIndex() const { return this->pageIndex_; }
+
+  [[nodiscard]] auto getCellIndex() const { return this->cellIndex_; }
+
+  void advance();
+
+  // 前置++
+  Cursor operator++();
+
+  // 后置++
+  Cursor operator++(int);
+};
 
 }  // namespace memory

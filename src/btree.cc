@@ -29,7 +29,7 @@ void structure::print_btree(memory::Table& table, u32 page_index, u32 indent_lev
     indent(indent_level);
     std::cout << "- internal(size " << node->internalNodeHeader_.key_nums_ << ")" << std::endl;
     for (usize index = 0; index < node->internalNodeHeader_.key_nums_; ++index) {
-      print_btree(table, node->internalNodeBody_.childs[index].value_, indent_level + 1);
+      print_btree(table, node->internalNodeBody_.childs[index].value_.page_index, indent_level + 1);
       indent(indent_level + 1);
       std::cout << "- key " << node->internalNodeBody_.childs[index].key_ << std::endl;
     }

@@ -89,7 +89,7 @@ Addr Pager::getPage(u32 index) {
   // 把内存看成是磁盘的缓存
   // 没有在内存中找到，就从磁盘中找
   if (this->pages_[index] == nullptr) {
-    this->pages_[index] = reinterpret_cast<Addr>(new structure::LeafNode((u8)NULL));
+    this->pages_[index] = reinterpret_cast<Addr>(new structure::LeafNode(static_cast<u8>(NULL)));
     
     // 这个页面在磁盘中
     // 如果这个条件不满足，说明添加了新的条目，磁盘中的文件也得更新了
@@ -126,8 +126,7 @@ u32 memory::Pager::get_unused_page() {
 }
 
 Table::Table(std::fstream& file): 
-  pager_(Pager{file}), 
-  cursor_(Cursor{}), 
+  pager_(Pager{file}),
   rootIndex_(0) {}
 
 template<>
@@ -135,12 +134,10 @@ void Table::insert(const structure::Cell& cell) {
   auto cursor = btree.find_key(*this, cell.key_);
 
   btree.insert_leaf_node(*this, cursor, cell.key_, cell.value_);
-
-  ++this->cursor_;
 }
 
 std::ostream& memory::operator<<(std::ostream& os, memory::Table& table) {
-  auto* page = table.pager_.getPage(table.cursor_.getPageIndex());
+  auto* page = table.pager_.getPage(table.rootIndex_);
   auto* node = reinterpret_cast<structure::LeafNode*>(page);
 
   for (u32 i = 0; i < node->leafNodeHeader_.cellsCount_; ++i) {
