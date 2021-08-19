@@ -109,7 +109,7 @@ struct alignas(memory::kPageSize) InternalNode {
 
 #pragma pack(pop)
 
-NodeType GetNodeType(Addr raw_address);
+NodeType GetNodeType(memory::Table& table, usize page_index);
 
 class BTree {
  public:
@@ -122,19 +122,19 @@ class BTree {
   static Cell* GetDestinationAddress(usize index, LeafNode* old_node,
                                      LeafNode* new_node);
 
-  static memory::Cursor FindKeyInLeafNode(memory::Table* table, LeafNode* node,
+  static memory::Cursor FindInInternalNode(memory::Table& table,
+                                           usize page_index, u32 key);
+
+  static memory::Cursor FindKeyInLeafNode(memory::Table& table,
                                           usize page_index, u32 key);
 
-  static memory::Cursor FindKeyInInternalNode(memory::Table* table,
-                                              InternalNode* node,
+  static memory::Cursor FindKeyInInternalNode(memory::Table& table,
                                               usize page_index, u32 key);
 
   static StatusCode SplitLeafNodeAndInsert(memory::Table& table,
                                            memory::Cursor& cursor, u32 key,
                                            memory::Row row);
 
-  // 把原来根结点的内容拷贝到一个新的左节点中
-  // 然后把这个根结点重新初始化为内部节点
   static StatusCode CreateNewRoot(memory::Table& table,
                                   usize right_node_page_index);
 };

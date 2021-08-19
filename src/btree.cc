@@ -2,9 +2,14 @@
 
 using namespace structure;
 
-NodeType structure::GetNodeType(Addr raw_address) {
-    auto* header = reinterpret_cast<NodeHeader*>(raw_address);
-    return header->node_type;
+#define page_index_to_leaf_node(x)  (reinterpret_cast<LeafNode*>(table.pager.GetPage(x)))
+
+#define page_index_to_internal_node(x) (reinterpret_cast<InternalNode*>(table.pager.GetPage(x)))
+
+NodeType structure::GetNodeType(memory::Table& table, usize page_index) {
+  auto* raw_address = table.pager.GetPage(page_index);
+  auto* header = reinterpret_cast<NodeHeader*>(raw_address);
+  return header->node_type;
 }
 
 void structure::Indent(u32 level) {
@@ -13,40 +18,48 @@ void structure::Indent(u32 level) {
   }
 }
 
+static void PrintLeafNode(memory::Table& table, usize leaf_index, u32 indent_level) {
+  auto* leaf_node = page_index_to_leaf_node(leaf_index);
+  Indent(indent_level);
+  std::cout << "- leaf(size " << leaf_node->leaf_node_header.cells_count << ")" << std::endl;
+  for (usize index = 0; index < leaf_node->leaf_node_header.cells_count; ++index) {
+    Indent(indent_level + 1);
+    std::cout << "- " << leaf_node->leaf_node_body.cells[index].key_ << std::endl;
+  }
+}
+
+static void PrintInternalNode(memory::Table& table, usize internal_index, u32 indent_level) {
+  auto* internal_node = page_index_to_internal_node(internal_index);
+  Indent(indent_level);
+  std::cout << "- internal(size " << internal_node->internal_node_header.key_nums
+            << ")" << std::endl;
+  for (usize index = 0; index < internal_node->internal_node_header.key_nums;
+       ++index) {
+    PrintBtree(table,
+        internal_node->internal_node_body.children[index].value_.page_index,
+               indent_level + 1);
+    Indent(indent_level + 1);
+    std::cout << "- key " << internal_node->internal_node_body.children[index].key_
+              << std::endl;
+  }
+  PrintBtree(table, internal_node->internal_node_body.rightest_child,
+             indent_level + 1);
+}
+
 void structure::PrintBtree(memory::Table& table, usize page_index, u32 indent_level) {
-  auto* page = table.pager.GetPage(page_index);
-  auto node_type = GetNodeType(page);
-  if (node_type == NodeType::kNodeLeaf) {
-    auto* node = reinterpret_cast<LeafNode*>(page);
-    Indent(indent_level);
-    std::cout << "- leaf(size " << node->leaf_node_header.cells_count << ")" << std::endl;
-    for (usize index = 0; index < node->leaf_node_header.cells_count; ++index) {
-      Indent(indent_level + 1);
-      std::cout << "- " << node->leaf_node_body.cells[index].key_ << std::endl;
-    }
-  } else if (node_type == NodeType::kNodeInternal) {
-    auto* node = reinterpret_cast<InternalNode*>(page);
-    Indent(indent_level);
-    std::cout << "- internal(size " << node->internal_node_header.key_nums
-              << ")" << std::endl;
-    for (usize index = 0; index < node->internal_node_header.key_nums;
-         ++index) {
-      PrintBtree(table,
-                  node->internal_node_body.children[index].value_.page_index,
-                  indent_level + 1);
-      Indent(indent_level + 1);
-      std::cout << "- key " << node->internal_node_body.children[index].key_
-                << std::endl;
-    }
-    PrintBtree(table, node->internal_node_body.rightest_child,
-                indent_level + 1);
+  switch (GetNodeType(table, page_index)) {
+    case NodeType::kNodeLeaf:
+      PrintLeafNode(table, page_index, indent_level);
+      break;
+    case NodeType::kNodeInternal:
+      PrintInternalNode(table, page_index, indent_level);
+      break;
   }
 }
 
 StatusCode BTree::InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
                                    u32 key, memory::Row row) {
-  auto* page = table.pager.GetPage(cursor.page_index);
-  auto* node = reinterpret_cast<LeafNode*>(page);
+  auto* node = page_index_to_leaf_node(cursor.page_index);
 
   if (node->leaf_node_header.cells_count >= kMaxCells) {
     return SplitLeafNodeAndInsert(table, cursor, key, row);
@@ -64,39 +77,17 @@ StatusCode BTree::InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
 
   return StatusCode::kSuccess;
 }
+
 memory::Cursor BTree::FindKey(memory::Table& table, u32 key) {
-  // 查找插入位置的时候，是从根结点开始查找
-  auto page_index = table.root_index;
-  auto* page = table.pager.GetPage(table.root_index);
-
-  auto node_type = GetNodeType(page);
-  if (node_type == NodeType::kNodeLeaf) {
-    auto* node = reinterpret_cast<LeafNode*>(page);
-    auto cursor = FindKeyInLeafNode(&table, node, page_index, key);
-
-    return cursor;
-  }
-  if (node_type == NodeType::kNodeInternal) {
-    // 找到internal node中对应的key
-    auto* node = reinterpret_cast<InternalNode*>(page);
-    auto cursor = FindKeyInInternalNode(&table, node, page_index, key);
-    // 根据key-value对获取相应的地址
-    auto child_page_index =
-        node->internal_node_body.children[cursor.cell_index].value_.page_index;
-
-    auto* page = table.pager.GetPage(child_page_index);
-    auto node_type = GetNodeType(page);
-    if (node_type == NodeType::kNodeLeaf) {
-      auto* node = reinterpret_cast<LeafNode*>(page);
-      return FindKeyInLeafNode(&table, node, child_page_index, key);
-    } else if (node_type == NodeType::kNodeInternal) {
-      auto* node = reinterpret_cast<InternalNode*>(page);
-      return FindKeyInInternalNode(&table, node, child_page_index, key);
-    }
-
-    return cursor;
+  // 查询的入口函数，从根结点开始查找
+  switch (GetNodeType(table, table.root_index)) {
+    case NodeType::kNodeLeaf:
+      return FindKeyInLeafNode(table, table.root_index, key);
+    case NodeType::kNodeInternal:
+      return FindKeyInInternalNode(table, table.root_index, key);
   }
 }
+
 Cell* BTree::GetDestinationAddress(usize index, LeafNode* old_node,
                                      LeafNode* new_node) {
   auto* destination_node = index < kSplitLeftCount ? old_node : new_node;
@@ -105,9 +96,26 @@ Cell* BTree::GetDestinationAddress(usize index, LeafNode* old_node,
 
   return destination;
 }
-memory::Cursor BTree::FindKeyInLeafNode(memory::Table* table,
-                                            LeafNode* node, usize page_index,
-                                            u32 key) {
+
+memory::Cursor BTree::FindInInternalNode(memory::Table& table, usize page_index, u32 key) {
+  auto* page = table.pager.GetPage(page_index);
+  auto* node = reinterpret_cast<InternalNode*>(page);
+
+  auto target_index = std::distance(
+      std::begin(node->internal_node_body.children),
+      std::lower_bound(node->internal_node_body.children.begin(),
+                       node->internal_node_body.children.begin() +
+                       node->internal_node_header.key_nums,
+                       key, [](const structure::Child& child, u32 key) {
+            return child.key_ < key;
+          }));
+  // 注意internal node不可能是end of table
+  return memory::Cursor(&table, page_index, target_index, false);
+}
+
+memory::Cursor BTree::FindKeyInLeafNode(memory::Table& table, usize page_index, u32 key) {
+  auto* node = page_index_to_leaf_node(page_index);
+
   // 在std::array中找到合适的插入位置
   auto target_index = std::distance(
       std::begin(node->leaf_node_body.cells),
@@ -121,31 +129,32 @@ memory::Cursor BTree::FindKeyInLeafNode(memory::Table* table,
   // 叶子节点，且节点总数=0，说明end of table了
   bool is_at_end = node->leaf_node_header.cells_count == 0;
 
-  return memory::Cursor(table, page_index, target_index, is_at_end);
+  return memory::Cursor(&table, page_index, target_index, is_at_end);
 }
-memory::Cursor BTree::FindKeyInInternalNode(memory::Table* table,
-                                                InternalNode* node,
-                                                usize page_index, u32 key) {
-  auto target_index = std::distance(
-      std::begin(node->internal_node_body.children),
-      std::lower_bound(node->internal_node_body.children.begin(),
-                       node->internal_node_body.children.begin() +
-                           node->internal_node_header.key_nums,
-                       key, [](const structure::Child& child, u32 key) {
-                         return child.key_ < key;
-                       }));
-  // 注意internal node不可能是end of table
-  return memory::Cursor(table, page_index, target_index, false);
+
+memory::Cursor BTree::FindKeyInInternalNode(memory::Table& table, usize page_index, u32 key) {
+  // 先找到对应key所在的索引，注意还需要到children中查找真实的地址
+  auto child_pos = FindInInternalNode(table, page_index, key);
+  auto* node = page_index_to_internal_node(page_index);
+  auto child_page_index = node->internal_node_body.children[child_pos.cell_index].value_.page_index;
+
+  switch (GetNodeType(table, child_page_index)) {
+    // 递归查询internal node
+    case NodeType::kNodeInternal:
+      return FindKeyInInternalNode(table, child_page_index, key);
+    // 已经到了叶子节点，那就直接查找
+    case NodeType::kNodeLeaf:
+      return FindKeyInLeafNode(table, child_page_index, key);
+  }
 }
+
 StatusCode BTree::SplitLeafNodeAndInsert(memory::Table& table,
                                              memory::Cursor& cursor, u32 key,
                                              memory::Row row) {
   // 获取新旧两个node
-  auto* old_node =
-      reinterpret_cast<LeafNode*>(table.pager.GetPage(cursor.page_index));
+  auto* old_node = page_index_to_leaf_node(cursor.page_index);
   usize new_page_index = table.pager.GetUnusedPage();
-  auto* new_node =
-      reinterpret_cast<LeafNode*>(table.pager.GetPage(new_page_index));
+  auto* new_node = page_index_to_leaf_node(new_page_index);
 
   // Mac下command + ctrl + g修改同一个局部变量名
   for (usize index = 0; index <= old_node->leaf_node_header.cells_count;
@@ -173,6 +182,7 @@ StatusCode BTree::SplitLeafNodeAndInsert(memory::Table& table,
   old_node->leaf_node_header.cells_count = kSplitLeftCount;
   old_node->leaf_node_header.next_page_index = new_page_index;
   new_node->node_header.node_type = NodeType::kNodeLeaf;
+  new_node->node_header.parent_pointer = old_node->node_header.parent_pointer;
   new_node->leaf_node_header.cells_count = kSplitRightCount;
 
   // 确定parentPointer
@@ -184,17 +194,23 @@ StatusCode BTree::SplitLeafNodeAndInsert(memory::Table& table,
   ::exit(-1);
 }
 
+// 把原来根结点的内容拷贝到一个新的左节点中
+// 然后把这个根结点重新初始化为内部节点
 StatusCode BTree::CreateNewRoot(memory::Table& table,
                                   usize right_node_page_index) {
   // 拷贝到新的左节点中
-  auto* root_node =
-      reinterpret_cast<LeafNode*>(table.pager.GetPage(table.root_index));
+  auto* root_node = page_index_to_leaf_node(table.root_index);
   auto left_node_page_index = table.pager.GetUnusedPage();
-  auto* left_node =
-      reinterpret_cast<LeafNode*>(table.pager.GetPage(left_node_page_index));
+  auto* left_node = page_index_to_leaf_node(left_node_page_index);
   ::memcpy(left_node, root_node, sizeof(LeafNode));
-  left_node->node_header.is_root = 0U;    // Not root
+
+  // 现在left node已经不是根结点，并且需要设置parent_pointer
+  left_node->node_header.is_root = 0U;
+  left_node->node_header.parent_pointer = table.root_index;
   left_node->leaf_node_header.next_page_index = right_node_page_index;
+  // 给right node也设置一个parent pointer
+  auto* right_node = page_index_to_leaf_node(right_node_page_index);
+  right_node->node_header.parent_pointer = table.root_index;
 
   // 创建内部节点
   auto* root_as_internal = reinterpret_cast<InternalNode*>(root_node);
