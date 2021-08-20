@@ -54,13 +54,15 @@ using Child = Pair<u32, usize>;
 
 constexpr usize kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
+constexpr usize kSplitLeafRightCount = (1 + kMaxCells) / 2;
+constexpr usize kSplitLeafLeftCount = (1 + kMaxCells) - kSplitLeafRightCount;
 
-constexpr usize kSplitRightCount = (1 + kMaxCells) / 2;
-
-constexpr usize kSplitLeftCount = (1 + kMaxCells) - kSplitRightCount;
-
+// 收缩来测试分裂内部节点
 constexpr usize kMaxChild = \
-  (memory::kPageSize - sizeof(NodeHeader) - sizeof(InternalNodeHeader)) / sizeof(Child);
+  (memory::kPageSize - sizeof(NodeHeader) - sizeof(InternalNodeHeader)) / (150 * sizeof(Child));
+// 注意最右节点对分裂后数目的影响
+constexpr usize kSplitInternalRightCount = kMaxChild / 2;
+constexpr usize kSplitInternalLeftCount = kMaxChild - kSplitInternalRightCount;
 
 struct LeafNodeBody {
   std::array<Cell, kMaxCells> cells;
@@ -89,7 +91,7 @@ struct alignas(memory::kPageSize) LeafNode {
     this->leaf_node_body = LeafNodeBody{.cells = std::array<Cell, kMaxCells>()};
   }
 
-  usize get_max_key() {
+  usize GetMaxKey() {
     usize max_index = this->leaf_node_header.cells_count - 1;
     usize max_key = this->leaf_node_body.cells[max_index].key_;
     return max_key;
@@ -100,6 +102,12 @@ struct alignas(memory::kPageSize) InternalNode {
   NodeHeader node_header;
   InternalNodeHeader internal_node_header;
   InternalNodeBody internal_node_body;
+
+  usize GetMaxKey() {
+    usize max_index = this->internal_node_header.key_nums - 1;
+    usize max_key = this->internal_node_body.children[max_index].key_;
+    return max_key;
+  }
 };
 
 #pragma pack(pop)
@@ -130,7 +138,7 @@ class BTree {
                                            memory::Cursor& cursor, u32 key,
                                            memory::Row row);
 
-  static void CreateNewRoot(memory::Table& table,
+  static void CreateNewRootLeaf(memory::Table& table,
                                   usize right_node_page_index);
 
   static u32 GetMaxKey(memory::Table& table, usize page_index);
@@ -138,6 +146,10 @@ class BTree {
   static void UpdateInternalNodeKey(memory::Table& table, usize page_index, u32 old_key, u32 new_key);
 
   static void InternalNodeInsert(memory::Table& table, usize parent_index, usize child_index);
+
+  static void SplitInternalNodeAndInsert(memory::Table& table, usize page_index, u32 key, u32 value);
+
+  static void CreateNodeRootInternal(memory::Table& table, usize right_node_page_index);
 };
 
 void Indent(u32 level);
