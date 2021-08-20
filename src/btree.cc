@@ -36,7 +36,7 @@ static void PrintInternalNode(memory::Table& table, usize internal_index, u32 in
   for (usize index = 0; index < internal_node->internal_node_header.key_nums;
        ++index) {
     PrintBtree(table,
-        internal_node->internal_node_body.children[index].value_.page_index,
+        internal_node->internal_node_body.children[index].value_,
                indent_level + 1);
     Indent(indent_level + 1);
     std::cout << "- key " << internal_node->internal_node_body.children[index].key_
@@ -57,12 +57,13 @@ void structure::PrintBtree(memory::Table& table, usize page_index, u32 indent_le
   }
 }
 
-StatusCode BTree::InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
+void BTree::InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
                                    u32 key, memory::Row row) {
   auto* node = page_index_to_leaf_node(cursor.page_index);
 
   if (node->leaf_node_header.cells_count >= kMaxCells) {
-    return SplitLeafNodeAndInsert(table, cursor, key, row);
+    SplitLeafNodeAndInsert(table, cursor, key, row);
+    return;
   }
   // Page里面的各个cell依然是一个数组。
   // 插入的时候把相应位置后面的元素都往后移一位
@@ -74,8 +75,6 @@ StatusCode BTree::InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
 
   ++node->leaf_node_header.cells_count;
   node->leaf_node_body.cells[insert_index] = Pair(key, row);
-
-  return StatusCode::kSuccess;
 }
 
 memory::Cursor BTree::FindKey(memory::Table& table, u32 key) {
@@ -136,7 +135,10 @@ memory::Cursor BTree::FindKeyInInternalNode(memory::Table& table, usize page_ind
   // 先找到对应key所在的索引，注意还需要到children中查找真实的地址
   auto child_pos = FindInInternalNode(table, page_index, key);
   auto* node = page_index_to_internal_node(page_index);
-  auto child_page_index = node->internal_node_body.children[child_pos.cell_index].value_.page_index;
+  // 注意rightest带来的区别
+  usize child_page_index = child_pos.cell_index >= node->internal_node_header.key_nums
+                         ? node->internal_node_body.rightest_child
+                         : node->internal_node_body.children[child_pos.cell_index].value_;
 
   switch (GetNodeType(table, child_page_index)) {
     // 递归查询internal node
@@ -148,13 +150,16 @@ memory::Cursor BTree::FindKeyInInternalNode(memory::Table& table, usize page_ind
   }
 }
 
-StatusCode BTree::SplitLeafNodeAndInsert(memory::Table& table,
+void BTree::SplitLeafNodeAndInsert(memory::Table& table,
                                              memory::Cursor& cursor, u32 key,
                                              memory::Row row) {
   // 获取新旧两个node
   auto* old_node = page_index_to_leaf_node(cursor.page_index);
   usize new_page_index = table.pager.GetUnusedPage();
   auto* new_node = page_index_to_leaf_node(new_page_index);
+
+  // 获取max key，以备后续过程使用
+  u32 old_node_max_key = GetMaxKey(table, cursor.page_index);
 
   // Mac下command + ctrl + g修改同一个局部变量名
   for (usize index = 0; index <= old_node->leaf_node_header.cells_count;
@@ -185,18 +190,22 @@ StatusCode BTree::SplitLeafNodeAndInsert(memory::Table& table,
   new_node->node_header.parent_pointer = old_node->node_header.parent_pointer;
   new_node->leaf_node_header.cells_count = kSplitRightCount;
 
-  // 确定parentPointer
+  // 如果该节点是根结点，那么就要特殊处理（分裂后引入新的根结点）
   if (cursor.page_index == table.root_index) {
-    return CreateNewRoot(table, new_page_index);
+    CreateNewRoot(table, new_page_index);
+    return;
   }
-
-  std::cerr << "Unimplemented branch!" << std::endl;
-  ::exit(-1);
+  // 如果不是，那就在父节点中更新这两个节点的信息
+  // 1. 更新老节点的信息（即max key的信息）
+  u32 old_node_new_max_key = GetMaxKey(table, cursor.page_index);
+  UpdateInternalNodeKey(table, old_node->node_header.parent_pointer, old_node_max_key, old_node_new_max_key);
+  // 2. 插入新节点信息
+  InternalNodeInsert(table, old_node->node_header.parent_pointer, new_page_index);
 }
 
 // 把原来根结点的内容拷贝到一个新的左节点中
 // 然后把这个根结点重新初始化为内部节点
-StatusCode BTree::CreateNewRoot(memory::Table& table,
+void BTree::CreateNewRoot(memory::Table& table,
                                   usize right_node_page_index) {
   // 拷贝到新的左节点中
   auto* root_node = page_index_to_leaf_node(table.root_index);
@@ -217,11 +226,59 @@ StatusCode BTree::CreateNewRoot(memory::Table& table,
   root_as_internal->node_header.node_type = NodeType::kNodeInternal;
   root_as_internal->internal_node_header.key_nums = 1;
   root_as_internal->internal_node_body.children[0].key_ = left_node->get_max_key();
-  root_as_internal->internal_node_body.children[0].value_.page_index =
-      left_node_page_index;
-  root_as_internal->internal_node_body.children[0].value_.next_page_index =
-      right_node_page_index;
+  root_as_internal->internal_node_body.children[0].value_ = left_node_page_index;
   root_as_internal->internal_node_body.rightest_child = right_node_page_index;
+}
 
-  return StatusCode::kSuccess;
+u32 BTree::GetMaxKey(memory::Table& table, usize page_index) {
+  switch (GetNodeType(table, page_index)) {
+    case NodeType::kNodeInternal: {
+      auto* internal_node = page_index_to_internal_node(page_index);
+      usize max_index = internal_node->internal_node_header.key_nums - 1;
+      return internal_node->internal_node_body.children[max_index].key_;
+    }
+    case NodeType::kNodeLeaf: {
+      auto* leaf_node = page_index_to_leaf_node(page_index);
+      usize max_index = leaf_node->leaf_node_header.cells_count - 1;
+      return leaf_node->leaf_node_body.cells[max_index].key_;
+    }
+  }
+}
+
+void BTree::UpdateInternalNodeKey(memory::Table& table, usize page_index,
+                                  u32 old_key, u32 new_key) {
+  // 注意rightest只不过是一个地址而已，更新key的时候可以不用管
+  auto* node = page_index_to_internal_node(page_index);
+  auto key_pos = FindInInternalNode(table, page_index, old_key);
+
+  node->internal_node_body.children[key_pos.cell_index].key_ = new_key;
+}
+
+void BTree::InternalNodeInsert(memory::Table& table, usize parent_index,
+                                 usize child_index) {
+  auto* parent = page_index_to_internal_node(parent_index);
+  usize rightest_child_index = parent->internal_node_body.rightest_child;
+  
+  u32 child_max_key = GetMaxKey(table, child_index);
+  u32 rightest_max_key = GetMaxKey(table, rightest_child_index);
+
+  // 通过判断max key来决定是否成为最右节点
+  if (child_max_key < rightest_max_key) {
+    // 如果新节点还不至于成为最右的节点，那就直接插入到body的数组中
+    usize insert_index = parent->internal_node_header.key_nums;
+    parent->internal_node_body.children[insert_index].key_ = child_max_key;
+    parent->internal_node_body.children[insert_index].value_ = child_index;
+    // 暂时先不用管next_page_index
+  } else {
+    // 如果新节点是新的最右的节点，那就交换这两个成员的位置
+    // 先把原来rightest的移到数组末端
+    usize insert_index =  parent->internal_node_header.key_nums;
+    parent->internal_node_body.children[insert_index].key_ = rightest_max_key;
+    parent->internal_node_body.children[insert_index].value_ = rightest_child_index;
+    // 再把新child作为rightest
+    parent->internal_node_body.rightest_child = child_index;
+  }
+  // 更新老节点元信息
+  // 新节点的parent pointer就不用更改了，之前已经改过了
+  ++parent->internal_node_header.key_nums;
 }

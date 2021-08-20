@@ -27,11 +27,6 @@ struct Pair {
 template<typename T, typename U>
 Pair(T, U) -> Pair<T, U>;
 
-struct PageInfo {
-  usize page_index;
-  usize next_page_index;
-};
-
 enum class NodeType : u8 {
   kNodeLeaf,
   kNodeInternal,
@@ -55,7 +50,7 @@ struct InternalNodeHeader {
 using Cell = Pair<u32, memory::Row>;
 
 // key和page_num，next_page_num对
-using Child = Pair<u32, PageInfo>;
+using Child = Pair<u32, usize>;
 
 constexpr usize kMaxCells =  \
   (memory::kPageSize - sizeof(NodeHeader) - sizeof(LeafNodeHeader)) / sizeof(Cell);
@@ -113,7 +108,7 @@ NodeType GetNodeType(memory::Table& table, usize page_index);
 
 class BTree {
  public:
-  static StatusCode InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
+  static void InsertLeafNode(memory::Table& table, memory::Cursor& cursor,
                             u32 key, memory::Row row);
 
   static memory::Cursor FindKey(memory::Table& table, u32 key);
@@ -131,12 +126,18 @@ class BTree {
   static memory::Cursor FindKeyInInternalNode(memory::Table& table,
                                               usize page_index, u32 key);
 
-  static StatusCode SplitLeafNodeAndInsert(memory::Table& table,
+  static void SplitLeafNodeAndInsert(memory::Table& table,
                                            memory::Cursor& cursor, u32 key,
                                            memory::Row row);
 
-  static StatusCode CreateNewRoot(memory::Table& table,
+  static void CreateNewRoot(memory::Table& table,
                                   usize right_node_page_index);
+
+  static u32 GetMaxKey(memory::Table& table, usize page_index);
+
+  static void UpdateInternalNodeKey(memory::Table& table, usize page_index, u32 old_key, u32 new_key);
+
+  static void InternalNodeInsert(memory::Table& table, usize parent_index, usize child_index);
 };
 
 void Indent(u32 level);
